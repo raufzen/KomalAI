@@ -57,7 +57,7 @@ class FloatingOverlayService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_SHOW -> {
-                val text = intent.getStringExtra(EXTRA_STATUS) ?: "सुन रही हूँ..."
+                val text = intent.getStringExtra(EXTRA_STATUS) ?: "Listening..."
                 createOrUpdateOverlay(text)
             }
             ACTION_UPDATE -> {

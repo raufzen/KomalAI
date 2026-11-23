@@ -224,7 +224,7 @@ fun VoiceSettingsScreen() {
                             prefs.appLanguage = "hinglish"
                             Toast.makeText(context, "Language set to Hinglish", Toast.LENGTH_SHORT).show()
                         },
-                        label = { Text("Hinglish (Hindi + English)") },
+                        label = { Text("Hinglish (Recommended)") },
                         leadingIcon = {
                             if (appLanguage == "hinglish") {
                                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))

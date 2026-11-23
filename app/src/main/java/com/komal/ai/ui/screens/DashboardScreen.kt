@@ -226,6 +226,72 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
             }
         }
 
+        // Assistant Language Selector Card (Hinglish first & English)
+        var selectedLanguage by remember { mutableStateOf(prefs.appLanguage) }
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = DarkSurface),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Language,
+                        contentDescription = "Language",
+                        tint = AccentCyan
+                    )
+                    Text(
+                        text = "Assistant Language",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        color = TextPrimary
+                    )
+                }
+                Text(
+                    text = "Choose voice response & command language:",
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedLanguage == "hinglish",
+                        onClick = {
+                            selectedLanguage = "hinglish"
+                            prefs.appLanguage = "hinglish"
+                        },
+                        label = { Text("Hinglish (Recommended)") },
+                        leadingIcon = {
+                            if (selectedLanguage == "hinglish") {
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    )
+                    FilterChip(
+                        selected = selectedLanguage == "english",
+                        onClick = {
+                            selectedLanguage = "english"
+                            prefs.appLanguage = "english"
+                        },
+                        label = { Text("English") },
+                        leadingIcon = {
+                            if (selectedLanguage == "english") {
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    )
+                }
+            }
+        }
+
         Text(
             text = "Required Permissions",
             fontSize = 14.sp,
@@ -295,7 +361,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
 
                 val hasKey = prefs.apiKey.isNotBlank()
                 Text(
-                    text = if (hasKey) "Active Model: ${prefs.selectedMainModel} (Voice: ${prefs.geminiVoicePersona})" else "Gemini API Key is not set yet!",
+                    text = if (hasKey) "Controller Model: ${prefs.selectedControllerModel} | Voice: ${prefs.geminiVoicePersona}" else "Gemini API Key is not set yet!",
                     fontSize = 13.sp,
                     color = if (hasKey) AccentEmerald else AccentRose
                 )

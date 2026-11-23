@@ -244,9 +244,9 @@ class GeminiApiClient {
             val url = "https://generativelanguage.googleapis.com/v1beta/models/$cleanModel:generateContent?key=${apiKey.trim()}"
 
             val langGuidance = if (languageMode.equals("english", ignoreCase = true)) {
-                "Speak in clear, professional English. (e.g. 'Opening WhatsApp...', 'Searching YouTube for you', etc.)"
+                "Speak in clear, polite, natural English (e.g. 'Opening WhatsApp...', 'Searching YouTube for you', 'Rahul has been sent the message')."
             } else {
-                "Speak in natural, friendly Hinglish (English alphabet + conversational Hindi, e.g. 'Opening WhatsApp...', 'YouTube pe search kar rahi hoon', 'Rahul ko message bhej diya'). Avoid pure Devanagari script."
+                "Speak in conversational Hinglish using ONLY the English/Latin alphabet (NEVER use Devanagari Hindi script). For example: 'WhatsApp open kar rahi hoon', 'YouTube pe songs search kar rahi hoon', 'Rahul ko message bhej diya'. Always use Roman/Latin letters."
             }
 
             val systemPrompt = """

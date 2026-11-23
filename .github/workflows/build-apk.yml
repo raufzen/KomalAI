@@ -70,12 +70,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.2.0
-          name: "Komal AI v1.2.0 (Gemini Native Audio & Independent Models)"
+          name: "Komal AI v1.2.0 (Gemini Native Audio, Hinglish/English & Independent Models)"
           body: |
             ### 📱 Komal AI v1.2.0 Release APK
             
             **🌟 What's New in v1.2.0:**
-            - 🎙️ **100% Gemini AI Native Speech (ZERO robotic local TTS)**: Realistic voice output generated directly by Google Gemini API.
+            - 🎙️ **100% Gemini AI Native Speech (ZERO robotic local TTS)**: Realistic voice output generated directly by Google Gemini API (`Aoede`, `Kore`, `Puck`, `Charon`, `Fenrir`).
+            - 🌐 **Bilingual Support (Hinglish & English)**: Conversational Hinglish (default) and clean English. No forced Devanagari script.
             - 🧠 **Independent 3-Way Model Selection**:
               - 1. Phone Controller Brain Model
               - 2. Dedicated Voice Output & Speech Model

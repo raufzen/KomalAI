@@ -1,0 +1,66 @@
+name: Build Komal AI APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Package Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle CLI
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build Debug APK with Gradle
+        run: |
+          gradle assembleDebug --stacktrace --no-daemon
+
+      - name: Check Built APK Output
+        run: |
+          ls -lh app/build/outputs/apk/debug/
+
+      - name: Upload Komal AI APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KomalAI-Debug-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create Release with APK
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: "Komal AI v1.0.0 (Release APK)"
+          body: |
+            ### 📱 Komal AI - Voice-Activated Autonomous Phone Controller APK
+            
+            - **Build**: Auto-compiled via GitHub Actions
+            - **Accessibility Service**: Phone control, WhatsApp, YouTube automation
+            - **Google Gemini API**: Dynamic model fetching
+            
+            📥 **Download `app-debug.apk` below and install on your phone.**
+          files: app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true

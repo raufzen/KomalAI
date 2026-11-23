@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Komal AI</string>
+    <string name="accessibility_service_label">Komal AI Phone Controller</string>
+    <string name="accessibility_service_description">Komal AI uses this Accessibility Service to interact with your phone screen, automate WhatsApp, YouTube, app navigation, typing, and perform clicks on your command.</string>
+</resources>

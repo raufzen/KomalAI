@@ -65,23 +65,25 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.1.0
+      - name: Create or Update GitHub Release v1.2.0
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.0
-          name: "Komal AI v1.1.0 (Signed Release APK)"
+          tag_name: v1.2.0
+          name: "Komal AI v1.2.0 (Gemini Native Audio & Independent Models)"
           body: |
-            ### 📱 Komal AI v1.1.0 - Major Feature Update
-
-            **🌟 What's New:**
-            - 🔄 **Seamless In-Place App Updates**: Permanent static signing key allows updates without ever uninstalling the previous version.
-            - 🔔 **In-App Auto-Update Checker**: Automatic update notification banner directly inside the app with 1-click install.
-            - ⚡ **Offline Fast Mode**: Instant offline actions for WhatsApp, YouTube, Camera, Settings, and System Navigation without needing Gemini API.
-            - 🎙️ **Gemini Native AI Voice Personas**: Realistic Google Gemini AI voices (`Aoede`, `Kore`, `Puck`, `Charon`, `Fenrir`) replacing robotic system TTS.
-            - 🌐 **Hinglish + English Bilingual Support**: Choose between conversational Hinglish and English.
-            - 🛠️ **Customizable UI & Floating Pill**: Sleek Material 3 design.
-
+            ### 📱 Komal AI v1.2.0 Release APK
+            
+            **🌟 What's New in v1.2.0:**
+            - 🎙️ **100% Gemini AI Native Speech (ZERO robotic local TTS)**: Realistic voice output generated directly by Google Gemini API.
+            - 🧠 **Independent 3-Way Model Selection**:
+              - 1. Phone Controller Brain Model
+              - 2. Dedicated Voice Output & Speech Model
+              - 3. Test Console Playground Model
+            - 🎨 **New Custom Vector App Logo & Icon**: Glowing AI Orb launcher icon and UI branding.
+            - ⚡ **Offline Zero-Latency Fast Actions**: Instant WhatsApp/YouTube/Home execution via Accessibility without calling Gemini API.
+            - 🔄 **Seamless In-Place Updates**: Permanent signing key, no uninstall needed!
+            
             📥 **Download `app-release.apk` below and install directly!**
           files: app/build/outputs/apk/release/app-release.apk
         env:

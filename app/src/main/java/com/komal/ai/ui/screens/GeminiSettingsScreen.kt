@@ -41,13 +41,17 @@ fun GeminiSettingsScreen() {
     var isPasswordVisible by remember { mutableStateOf(false) }
     var isLoadingModels by remember { mutableStateOf(false) }
     var availableModels by remember { mutableStateOf(prefs.cachedModels) }
-    var selectedMainModel by remember { mutableStateOf(prefs.selectedMainModel) }
-    var selectedVoiceModel by remember { mutableStateOf(prefs.selectedVoiceModel) }
 
-    var mainDropdownExpanded by remember { mutableStateOf(false) }
+    var selectedControllerModel by remember { mutableStateOf(prefs.selectedControllerModel) }
+    var selectedVoiceModel by remember { mutableStateOf(prefs.selectedVoiceModel) }
+    var selectedTestModel by remember { mutableStateOf(prefs.selectedTestModel) }
+
+    var controllerDropdownExpanded by remember { mutableStateOf(false) }
     var voiceDropdownExpanded by remember { mutableStateOf(false) }
+    var testDropdownExpanded by remember { mutableStateOf(false) }
+
     var statusMessage by remember { mutableStateOf<String?>(null) }
-    var isTestingModel by remember { mutableStateOf(false) }
+    var isTestingConnection by remember { mutableStateOf(false) }
 
     fun fetchModelsFromApi() {
         if (apiKeyInput.isBlank()) {
@@ -56,7 +60,7 @@ fun GeminiSettingsScreen() {
         }
 
         isLoadingModels = true
-        statusMessage = "Fetching available models from Gemini API..."
+        statusMessage = "Loading available models from Google Gemini API..."
         focusManager.clearFocus()
 
         scope.launch {
@@ -68,18 +72,22 @@ fun GeminiSettingsScreen() {
                 prefs.cachedModels = models
 
                 if (models.isNotEmpty()) {
-                    if (!models.any { it.name == selectedMainModel }) {
-                        selectedMainModel = models.first().name
-                        prefs.selectedMainModel = selectedMainModel
+                    if (!models.any { it.name == selectedControllerModel }) {
+                        selectedControllerModel = models.first().name
+                        prefs.selectedControllerModel = selectedControllerModel
                     }
                     if (!models.any { it.name == selectedVoiceModel }) {
                         selectedVoiceModel = models.first().name
                         prefs.selectedVoiceModel = selectedVoiceModel
                     }
+                    if (!models.any { it.name == selectedTestModel }) {
+                        selectedTestModel = models.first().name
+                        prefs.selectedTestModel = selectedTestModel
+                    }
                     statusMessage = "Success! Loaded ${models.size} models from your API key."
                     Toast.makeText(context, "Loaded ${models.size} Gemini Models", Toast.LENGTH_SHORT).show()
                 } else {
-                    statusMessage = "No chat-compatible models returned."
+                    statusMessage = "No chat-compatible models found."
                 }
             }.onFailure { e ->
                 statusMessage = "Error: ${e.localizedMessage}"
@@ -103,15 +111,21 @@ fun GeminiSettingsScreen() {
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Hub, contentDescription = null, tint = AccentCyan)
+                    Text(
+                        text = "Gemini Models & API Hub",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Google Gemini API & Model Hub",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Enter your Google Gemini API key. All available models (Pro, Flash, Vision) will be dynamically loaded directly from Google's server.",
+                    text = "Configure separate Gemini models for Phone Controlling, Voice Generation, and Test Console.",
                     fontSize = 13.sp,
                     color = TextSecondary,
                     lineHeight = 18.sp
@@ -130,7 +144,7 @@ fun GeminiSettingsScreen() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Gemini API Key",
+                    text = "Google Gemini API Key",
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp,
                     color = AccentCyanLight
@@ -177,7 +191,7 @@ fun GeminiSettingsScreen() {
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Fetching Models...")
+                        Text("Loading Models from API...")
                     } else {
                         Icon(imageVector = Icons.Default.CloudDownload, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
@@ -195,8 +209,16 @@ fun GeminiSettingsScreen() {
             }
         }
 
-        // Model Selection Section
+        // Section: Independent Model Selectors
         if (availableModels.isNotEmpty()) {
+            Text(
+                text = "Independent Model Selection (${availableModels.size} Loaded)",
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = AccentCyanLight
+            )
+
+            // Selector 1: Phone Controller Brain Model
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = DarkSurface),
@@ -204,197 +226,252 @@ fun GeminiSettingsScreen() {
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        Icon(imageVector = Icons.Default.Psychology, contentDescription = null, tint = AccentEmerald)
                         Text(
-                            text = "Available Models (${availableModels.size})",
-                            fontSize = 15.sp,
+                            text = "1. Phone Controller Brain Model",
                             fontWeight = FontWeight.Bold,
-                            color = AccentCyanLight
-                        )
-                        Badge(containerColor = PrimaryIndigoDark) {
-                            Text(
-                                "Live API",
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                fontSize = 11.sp,
-                                color = Color.White
-                            )
-                        }
-                    }
-
-                    // Selector 1: Main Controller Brain
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "1. Phone Controller Brain (Primary Agent Model)",
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 13.sp,
+                            fontSize = 14.sp,
                             color = TextPrimary
                         )
-                        Text(
-                            text = "Used for UI analysis, WhatsApp, YouTube, and phone action planning",
-                            fontSize = 11.sp,
-                            color = TextSecondary
-                        )
-
-                        ExposedDropdownMenuBox(
-                            expanded = mainDropdownExpanded,
-                            onExpandedChange = { mainDropdownExpanded = !mainDropdownExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = selectedMainModel.removePrefix("models/"),
-                                onValueChange = {},
-                                readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = mainDropdownExpanded) },
-                                modifier = Modifier
-                                    .menuAnchor()
-                                    .fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = PrimaryIndigo,
-                                    unfocusedBorderColor = DarkCard,
-                                    focusedTextColor = TextPrimary,
-                                    unfocusedTextColor = TextPrimary
-                                )
-                            )
-
-                            ExposedDropdownMenu(
-                                expanded = mainDropdownExpanded,
-                                onDismissRequest = { mainDropdownExpanded = false }
-                            ) {
-                                availableModels.forEach { model ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Column {
-                                                Text(
-                                                    text = model.cleanId,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                                if (!model.displayName.isNullOrBlank()) {
-                                                    Text(
-                                                        text = model.displayName,
-                                                        fontSize = 11.sp,
-                                                        color = TextSecondary
-                                                    )
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            selectedMainModel = model.name
-                                            prefs.selectedMainModel = model.name
-                                            mainDropdownExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
                     }
+                    Text(
+                        text = "Used for Accessibility screen reading, WhatsApp messaging, and app navigation planning",
+                        fontSize = 11.sp,
+                        color = TextSecondary
+                    )
 
-                    Divider(color = DarkCard)
-
-                    // Selector 2: Voice & Fast Response Model
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "2. Fast Voice Response Model",
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 13.sp,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = "Low-latency fast model for instant voice feedback (e.g. gemini-1.5-flash / gemini-2.0-flash)",
-                            fontSize = 11.sp,
-                            color = TextSecondary
-                        )
-
-                        ExposedDropdownMenuBox(
-                            expanded = voiceDropdownExpanded,
-                            onExpandedChange = { voiceDropdownExpanded = !voiceDropdownExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = selectedVoiceModel.removePrefix("models/"),
-                                onValueChange = {},
-                                readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = voiceDropdownExpanded) },
-                                modifier = Modifier
-                                    .menuAnchor()
-                                    .fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = PrimaryIndigo,
-                                    unfocusedBorderColor = DarkCard,
-                                    focusedTextColor = TextPrimary,
-                                    unfocusedTextColor = TextPrimary
-                                )
-                            )
-
-                            ExposedDropdownMenu(
-                                expanded = voiceDropdownExpanded,
-                                onDismissRequest = { voiceDropdownExpanded = false }
-                            ) {
-                                availableModels.forEach { model ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Column {
-                                                Text(
-                                                    text = model.cleanId,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                                if (!model.displayName.isNullOrBlank()) {
-                                                    Text(
-                                                        text = model.displayName,
-                                                        fontSize = 11.sp,
-                                                        color = TextSecondary
-                                                    )
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            selectedVoiceModel = model.name
-                                            prefs.selectedVoiceModel = model.name
-                                            voiceDropdownExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Test Model Connection Button
-                    OutlinedButton(
-                        onClick = {
-                            isTestingModel = true
-                            scope.launch {
-                                val testResult = app.geminiClient.planAction(
-                                    apiKey = prefs.apiKey,
-                                    modelName = selectedMainModel,
-                                    userPrompt = "Hello Komal, test connection!",
-                                    screenContext = "",
-                                    languageMode = prefs.appLanguage
-                                )
-                                isTestingModel = false
-                                testResult.onSuccess {
-                                    Toast.makeText(context, "Success! Model connected perfectly", Toast.LENGTH_LONG).show()
-                                    app.ttsManager.speak(if (prefs.appLanguage == "english") "Connection successful! Komal is ready." else "Connection successful! Komal taiyar hai.")
-                                }.onFailure { e ->
-                                    Toast.makeText(context, "Test Failed: ${e.message}", Toast.LENGTH_LONG).show()
-                                }
-                            }
-                        },
-                        enabled = !isTestingModel,
-                        modifier = Modifier.fillMaxWidth()
+                    ExposedDropdownMenuBox(
+                        expanded = controllerDropdownExpanded,
+                        onExpandedChange = { controllerDropdownExpanded = !controllerDropdownExpanded }
                     ) {
-                        if (isTestingModel) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Testing Connection...")
-                        } else {
-                            Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = AccentEmerald)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Test Model Connection")
+                        OutlinedTextField(
+                            value = selectedControllerModel.removePrefix("models/"),
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = controllerDropdownExpanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryIndigo,
+                                unfocusedBorderColor = DarkCard,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary
+                            )
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = controllerDropdownExpanded,
+                            onDismissRequest = { controllerDropdownExpanded = false }
+                        ) {
+                            availableModels.forEach { model ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(model.cleanId, fontWeight = FontWeight.Bold)
+                                            if (!model.displayName.isNullOrBlank()) {
+                                                Text(model.displayName, fontSize = 11.sp, color = TextSecondary)
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        selectedControllerModel = model.name
+                                        prefs.selectedControllerModel = model.name
+                                        controllerDropdownExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
+                }
+            }
+
+            // Selector 2: Voice & Speech Model
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.RecordVoiceOver, contentDescription = null, tint = AccentCyan)
+                        Text(
+                            text = "2. Voice Output Model (Gemini Speech)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = TextPrimary
+                        )
+                    }
+                    Text(
+                        text = "Dedicated model for generating Gemini native AI audio speech (e.g. gemini-2.0-flash)",
+                        fontSize = 11.sp,
+                        color = TextSecondary
+                    )
+
+                    ExposedDropdownMenuBox(
+                        expanded = voiceDropdownExpanded,
+                        onExpandedChange = { voiceDropdownExpanded = !voiceDropdownExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedVoiceModel.removePrefix("models/"),
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = voiceDropdownExpanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryIndigo,
+                                unfocusedBorderColor = DarkCard,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary
+                            )
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = voiceDropdownExpanded,
+                            onDismissRequest = { voiceDropdownExpanded = false }
+                        ) {
+                            availableModels.forEach { model ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(model.cleanId, fontWeight = FontWeight.Bold)
+                                            if (!model.displayName.isNullOrBlank()) {
+                                                Text(model.displayName, fontSize = 11.sp, color = TextSecondary)
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        selectedVoiceModel = model.name
+                                        prefs.selectedVoiceModel = model.name
+                                        voiceDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Selector 3: Test Console Model
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Terminal, contentDescription = null, tint = AccentAmber)
+                        Text(
+                            text = "3. Test Console Model",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = TextPrimary
+                        )
+                    }
+                    Text(
+                        text = "Model used specifically when executing prompts in the in-app Test Console",
+                        fontSize = 11.sp,
+                        color = TextSecondary
+                    )
+
+                    ExposedDropdownMenuBox(
+                        expanded = testDropdownExpanded,
+                        onExpandedChange = { testDropdownExpanded = !testDropdownExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedTestModel.removePrefix("models/"),
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = testDropdownExpanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryIndigo,
+                                unfocusedBorderColor = DarkCard,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary
+                            )
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = testDropdownExpanded,
+                            onDismissRequest = { testDropdownExpanded = false }
+                        ) {
+                            availableModels.forEach { model ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(model.cleanId, fontWeight = FontWeight.Bold)
+                                            if (!model.displayName.isNullOrBlank()) {
+                                                Text(model.displayName, fontSize = 11.sp, color = TextSecondary)
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        selectedTestModel = model.name
+                                        prefs.selectedTestModel = model.name
+                                        testDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Test Model Connection Button
+            OutlinedButton(
+                onClick = {
+                    isTestingConnection = true
+                    scope.launch {
+                        val testResult = app.geminiClient.planAction(
+                            apiKey = prefs.apiKey,
+                            modelName = selectedControllerModel,
+                            userPrompt = "Hello Komal, test connection!",
+                            screenContext = "",
+                            languageMode = prefs.appLanguage
+                        )
+                        isTestingConnection = false
+                        testResult.onSuccess {
+                            Toast.makeText(context, "Success! Model connected perfectly", Toast.LENGTH_LONG).show()
+                            app.voiceSpeaker.speak("Connection successful! Komal is ready.")
+                        }.onFailure { e ->
+                            Toast.makeText(context, "Test Failed: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                },
+                enabled = !isTestingConnection,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (isTestingConnection) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Testing Connection...")
+                } else {
+                    Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = AccentEmerald)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Test Connection")
                 }
             }
         }

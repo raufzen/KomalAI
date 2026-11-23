@@ -6,8 +6,8 @@ import com.komal.ai.data.PreferencesManager
 import com.komal.ai.gemini.GeminiApiClient
 import com.komal.ai.gemini.GeminiAudioPlayer
 import com.komal.ai.offline.OfflineIntentEngine
-import com.komal.ai.tts.KomalTtsManager
 import com.komal.ai.updater.AppUpdateManager
+import com.komal.ai.voice.GeminiVoiceSpeaker
 
 class KomalApp : Application() {
 
@@ -17,16 +17,16 @@ class KomalApp : Application() {
     lateinit var geminiClient: GeminiApiClient
         private set
 
-    lateinit var ttsManager: KomalTtsManager
+    lateinit var audioPlayer: GeminiAudioPlayer
+        private set
+
+    lateinit var voiceSpeaker: GeminiVoiceSpeaker
         private set
 
     lateinit var actionExecutor: ScreenActionExecutor
         private set
 
     lateinit var offlineEngine: OfflineIntentEngine
-        private set
-
-    lateinit var audioPlayer: GeminiAudioPlayer
         private set
 
     lateinit var updateManager: AppUpdateManager
@@ -43,16 +43,16 @@ class KomalApp : Application() {
 
         preferencesManager = PreferencesManager(this)
         geminiClient = GeminiApiClient()
-        ttsManager = KomalTtsManager(this)
-        actionExecutor = ScreenActionExecutor(this, ttsManager, geminiClient)
-        offlineEngine = OfflineIntentEngine(this, actionExecutor, ttsManager)
         audioPlayer = GeminiAudioPlayer(this)
+        voiceSpeaker = GeminiVoiceSpeaker(this, geminiClient, audioPlayer)
+        actionExecutor = ScreenActionExecutor(this, voiceSpeaker, geminiClient)
+        offlineEngine = OfflineIntentEngine(this, actionExecutor, voiceSpeaker)
         updateManager = AppUpdateManager(this)
     }
 
     override fun onTerminate() {
         super.onTerminate()
-        ttsManager.shutdown()
         audioPlayer.stop()
+        voiceSpeaker.stop()
     }
 }

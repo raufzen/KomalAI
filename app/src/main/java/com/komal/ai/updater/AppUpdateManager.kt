@@ -36,7 +36,7 @@ class AppUpdateManager(private val context: Context) {
 
     private val client = OkHttpClient()
     private val gson = Gson()
-    val currentVersion = "v1.1.0"
+    val currentVersion = "v1.2.0"
 
     data class UpdateInfo(
         val isUpdateAvailable: Boolean,

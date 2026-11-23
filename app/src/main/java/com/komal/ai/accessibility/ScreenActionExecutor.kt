@@ -8,7 +8,7 @@ import android.util.Log
 import com.komal.ai.KomalApp
 import com.komal.ai.gemini.GeminiApiClient
 import com.komal.ai.gemini.GeminiFunctionCall
-import com.komal.ai.tts.KomalTtsManager
+import com.komal.ai.voice.GeminiVoiceSpeaker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -17,7 +17,7 @@ import java.net.URLEncoder
 
 class ScreenActionExecutor(
     private val context: Context,
-    private val ttsManager: KomalTtsManager,
+    private val voiceSpeaker: GeminiVoiceSpeaker,
     private val geminiClient: GeminiApiClient
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
@@ -41,7 +41,7 @@ class ScreenActionExecutor(
             "open_app" -> {
                 val appName = args["app_name"]?.toString() ?: ""
                 onStatusUpdate("Opening $appName...")
-                ttsManager.speak(if (isHinglish) "$appName open kar rahi hoon" else "Opening $appName")
+                voiceSpeaker.speak(if (isHinglish) "$appName open kar rahi hoon" else "Opening $appName")
                 openAppByName(appName)
             }
 
@@ -49,14 +49,14 @@ class ScreenActionExecutor(
                 val recipient = args["recipient"]?.toString() ?: ""
                 val message = args["message"]?.toString() ?: ""
                 onStatusUpdate("Sending WhatsApp message to $recipient...")
-                ttsManager.speak(if (isHinglish) "$recipient ko WhatsApp message bhej rahi hoon" else "Sending WhatsApp message to $recipient")
+                voiceSpeaker.speak(if (isHinglish) "$recipient ko WhatsApp message bhej rahi hoon" else "Sending WhatsApp message to $recipient")
                 sendWhatsAppMessage(recipient, message)
             }
 
             "youtube_search" -> {
                 val query = args["query"]?.toString() ?: ""
                 onStatusUpdate("Searching YouTube for '$query'...")
-                ttsManager.speak(if (isHinglish) "YouTube pe $query play kar rahi hoon" else "Searching $query on YouTube")
+                voiceSpeaker.speak(if (isHinglish) "YouTube pe $query play kar rahi hoon" else "Searching $query on YouTube")
                 searchYouTube(query)
             }
 
@@ -73,9 +73,9 @@ class ScreenActionExecutor(
                 if (service != null) {
                     val clicked = service.clickByText(targetText)
                     if (clicked) {
-                        ttsManager.speak(if (isHinglish) "$targetText pe click kar diya" else "Clicked on $targetText")
+                        voiceSpeaker.speak(if (isHinglish) "$targetText pe click kar diya" else "Clicked on $targetText")
                     } else {
-                        ttsManager.speak(if (isHinglish) "$targetText screen pe nahi mila" else "Could not find $targetText on screen")
+                        voiceSpeaker.speak(if (isHinglish) "$targetText screen pe nahi mila" else "Could not find $targetText on screen")
                     }
                 } else {
                     onStatusUpdate("Accessibility service is disabled!")
@@ -106,7 +106,7 @@ class ScreenActionExecutor(
             "speak_to_user" -> {
                 val speech = args["speech_text"]?.toString() ?: ""
                 onStatusUpdate(speech)
-                ttsManager.speak(speech)
+                voiceSpeaker.speak(speech)
             }
 
             else -> {
@@ -125,7 +125,6 @@ class ScreenActionExecutor(
 
         var matchedPackage: String? = null
 
-        // Specific overrides for common apps
         when {
             cleanQuery.contains("whatsapp") -> matchedPackage = "com.whatsapp"
             cleanQuery.contains("youtube") -> matchedPackage = "com.google.android.youtube"
@@ -162,7 +161,7 @@ class ScreenActionExecutor(
             }
         }
 
-        ttsManager.speak(if (isHinglish) "Sorry, $name app nahi mila" else "Sorry, I could not find $name on your phone")
+        voiceSpeaker.speak(if (isHinglish) "Sorry, $name app nahi mila" else "Sorry, I could not find $name on your phone")
         return false
     }
 
@@ -183,7 +182,7 @@ class ScreenActionExecutor(
 
                 try {
                     context.startActivity(intent)
-                    delay(2500) // wait for WhatsApp chat to open
+                    delay(2500)
                     val service = KomalAccessibilityService.instance
                     service?.clickByText("Send")
                         ?: service?.clickByText("भेजें")
@@ -232,23 +231,36 @@ class ScreenActionExecutor(
     }
 
     /**
-     * Fetch news summary via Gemini API and speak it aloud
+     * Fetch news summary via Gemini API and speak it aloud using Gemini AI Voice
      */
     fun fetchAndSpeakNews(topic: String, apiKey: String, selectedModel: String) {
         scope.launch {
-            ttsManager.speak(if (isHinglish) "Aaj ki top news la rahi hoon..." else "Fetching today's top headlines...")
+            voiceSpeaker.speak(if (isHinglish) "Aaj ki top news la rahi hoon..." else "Fetching today's top headlines...")
             val langDesc = if (isHinglish) "conversational Hinglish (English alphabet + simple Hindi)" else "clear English"
             val prompt = "Give a crisp 3-bullet summary of today's top news updates regarding: $topic. Answer in $langDesc so it sounds pleasant and natural when spoken aloud."
-            val result = geminiClient.planAction(apiKey, selectedModel, prompt, "", if (isHinglish) "hinglish" else "english")
+            val result = geminiClient.planAction(
+                apiKey = apiKey,
+                modelName = selectedModel,
+                userPrompt = prompt,
+                screenContext = "",
+                languageMode = if (isHinglish) "hinglish" else "english",
+                requestAudio = true
+            )
             result.onSuccess { candidate ->
-                val newsText = candidate.content?.parts?.firstOrNull()?.text
-                if (!newsText.isNullOrBlank()) {
-                    ttsManager.speak(newsText)
+                val audioPart = candidate.content?.parts?.firstOrNull { it.inlineData != null }
+                if (audioPart?.inlineData != null) {
+                    (context.applicationContext as? KomalApp)?.audioPlayer?.playBase64Audio(
+                        audioPart.inlineData.data,
+                        audioPart.inlineData.mimeType
+                    )
                 } else {
-                    ttsManager.speak(if (isHinglish) "Koi khaas news nahi mili" else "No recent updates found for $topic")
+                    val newsText = candidate.content?.parts?.firstOrNull()?.text
+                    if (!newsText.isNullOrBlank()) {
+                        voiceSpeaker.speak(newsText)
+                    }
                 }
             }.onFailure {
-                ttsManager.speak(if (isHinglish) "News fetch karne me issue aaya hai, please internet check karein" else "Could not fetch news, please check your internet connection")
+                voiceSpeaker.speak(if (isHinglish) "News fetch karne me issue aaya hai, please internet check karein" else "Could not fetch news, please check your internet connection")
             }
         }
     }

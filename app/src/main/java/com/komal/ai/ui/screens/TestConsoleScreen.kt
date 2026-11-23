@@ -43,7 +43,7 @@ fun TestConsoleScreen() {
     var logs by remember {
         mutableStateOf(
             listOf(
-                ConsoleLogItem("00:00", "System", "Komal AI Test Console is ready. Tap any quick command below or type your instruction.")
+                ConsoleLogItem("00:00", "System", "Komal AI Test Console is ready. Using model: ${prefs.selectedTestModel.removePrefix("models/")}")
             )
         )
     }
@@ -69,16 +69,18 @@ fun TestConsoleScreen() {
         scope.launch {
             try {
                 val screenContext = KomalAccessibilityService.instance?.dumpScreenHierarchy() ?: ""
-                val model = prefs.selectedMainModel
+                val testModel = prefs.selectedTestModel
                 val langMode = prefs.appLanguage
 
-                addLog("Gemini", "Planning action using model '$model' ($langMode)...")
+                addLog("Gemini", "Planning action using Test Model '$testModel' ($langMode)...")
                 val result = app.geminiClient.planAction(
                     apiKey = apiKey,
-                    modelName = model,
+                    modelName = testModel,
                     userPrompt = cmd,
                     screenContext = screenContext,
-                    languageMode = langMode
+                    languageMode = langMode,
+                    voicePersona = prefs.geminiVoicePersona,
+                    requestAudio = true
                 )
 
                 result.onSuccess { candidate ->
@@ -89,14 +91,20 @@ fun TestConsoleScreen() {
                         app.actionExecutor.executeFunctionCall(
                             call = call,
                             apiKey = apiKey,
-                            selectedModel = model,
+                            selectedModel = testModel,
                             onStatusUpdate = { update ->
                                 addLog("Komal", update)
                             }
                         )
+                    }
+
+                    // Play Gemini native voice
+                    val audioPart = candidate.content?.parts?.firstOrNull { it.inlineData != null }
+                    if (audioPart?.inlineData != null) {
+                        app.audioPlayer.playBase64Audio(audioPart.inlineData.data, audioPart.inlineData.mimeType)
                     } else if (!part?.text.isNullOrBlank()) {
                         addLog("Komal", part.text ?: "")
-                        app.ttsManager.speak(part.text ?: "")
+                        app.voiceSpeaker.speak(part.text ?: "")
                     }
                 }.onFailure { e ->
                     addLog("System", "Error: ${e.localizedMessage}")
@@ -118,7 +126,7 @@ fun TestConsoleScreen() {
     ) {
         // Sample command quick chips
         Text(
-            text = "Quick Test Commands:",
+            text = "Quick Test Commands (Using: ${prefs.selectedTestModel.removePrefix("models/")}):",
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,
             color = AccentCyanLight

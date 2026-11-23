@@ -1,5 +1,6 @@
 package com.komal.ai.gemini
 
+import android.util.Log
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -49,6 +50,69 @@ class GeminiApiClient {
 
             Result.success(filtered)
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Synthesizes realistic speech directly using Gemini API native audio output (NO local TTS)
+     * Returns Pair<base64AudioData, mimeType>
+     */
+    suspend fun generateSpeechAudio(
+        apiKey: String,
+        voiceModel: String,
+        textToSpeak: String,
+        voicePersona: String = "Aoede"
+    ): Result<Pair<String, String>> = withContext(Dispatchers.IO) {
+        try {
+            if (apiKey.isBlank() || textToSpeak.isBlank()) {
+                return@withContext Result.failure(IllegalArgumentException("Empty API key or text"))
+            }
+
+            val cleanModel = voiceModel.removePrefix("models/")
+            val url = "https://generativelanguage.googleapis.com/v1beta/models/$cleanModel:generateContent?key=${apiKey.trim()}"
+
+            val requestPayload = GeminiGenerateRequest(
+                contents = listOf(
+                    GeminiContent(
+                        role = "user",
+                        parts = listOf(GeminiPart(text = "Please speak the following text out loud verbatim: $textToSpeak"))
+                    )
+                ),
+                generationConfig = GeminiGenerationConfig(
+                    temperature = 0.2f,
+                    responseModalities = listOf("AUDIO"),
+                    speechConfig = GeminiSpeechConfig(
+                        voiceConfig = GeminiVoiceConfig(
+                            prebuiltVoiceConfig = GeminiPrebuiltVoiceConfig(voiceName = voicePersona)
+                        )
+                    )
+                )
+            )
+
+            val jsonBody = gson.toJson(requestPayload)
+            val request = Request.Builder()
+                .url(url)
+                .post(jsonBody.toRequestBody(jsonMediaType))
+                .build()
+
+            val response = client.newCall(request).execute()
+            val responseText = response.body?.string() ?: ""
+
+            if (!response.isSuccessful) {
+                return@withContext Result.failure(Exception("HTTP ${response.code}: $responseText"))
+            }
+
+            val genResponse = gson.fromJson(responseText, GeminiGenerateResponse::class.java)
+            val audioPart = genResponse.candidates?.firstOrNull()?.content?.parts?.firstOrNull { it.inlineData != null }
+
+            if (audioPart?.inlineData != null) {
+                Result.success(Pair(audioPart.inlineData.data, audioPart.inlineData.mimeType))
+            } else {
+                Result.failure(Exception("No audio inlineData returned by Gemini model"))
+            }
+        } catch (e: Exception) {
+            Log.e("GeminiApiClient", "Failed to generate Gemini speech audio", e)
             Result.failure(e)
         }
     }
@@ -243,7 +307,6 @@ class GeminiApiClient {
             val responseText = response.body?.string() ?: ""
 
             if (!response.isSuccessful) {
-                // If model does not support audio modalities, retry without audio config
                 if (requestAudio && response.code == 400) {
                     return@withContext planAction(apiKey, modelName, userPrompt, screenContext, languageMode, voicePersona, requestAudio = false)
                 }

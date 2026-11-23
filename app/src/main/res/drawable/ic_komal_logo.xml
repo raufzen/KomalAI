@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Outer Glow -->
+    <path
+        android:fillColor="#1E1B4B"
+        android:pathData="M24,2 A22,22 0 1,1 24,46 A22,22 0 1,1 24,2 Z" />
+    <!-- Gradient Core -->
+    <path
+        android:fillColor="#4F46E5"
+        android:pathData="M24,8 A16,16 0 1,1 24,40 A16,16 0 1,1 24,8 Z" />
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M24,14 A10,10 0 1,1 24,34 A10,10 0 1,1 24,14 Z" />
+    <!-- Center Mic Shape -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,18 c-1.6,0 -3,1.4 -3,3 v5 c0,1.6 1.4,3 3,3 s3,-1.4 3,-3 v-5 c0,-1.6 -1.4,-3 -3,-3 z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M18,24 c0,3.3 2.7,6 6,6 s6,-2.7 6,-6" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M24,30 v3" />
+</vector>

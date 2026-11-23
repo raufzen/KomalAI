@@ -15,13 +15,33 @@ class PreferencesManager(context: Context) {
         get() = prefs.getString("gemini_api_key", "") ?: ""
         set(value) = prefs.edit().putString("gemini_api_key", value).apply()
 
-    var selectedMainModel: String
-        get() = prefs.getString("selected_main_model", "models/gemini-1.5-flash") ?: "models/gemini-1.5-flash"
-        set(value) = prefs.edit().putString("selected_main_model", value).apply()
+    /**
+     * 1. Phone Controller Brain Model (For Accessibility, UI inspection, Tool Calling)
+     */
+    var selectedControllerModel: String
+        get() = prefs.getString("selected_controller_model", "models/gemini-2.0-flash") ?: "models/gemini-2.0-flash"
+        set(value) = prefs.edit().putString("selected_controller_model", value).apply()
 
+    /**
+     * 2. Voice Output Model (For Gemini AI Speech & Audio Generation)
+     */
     var selectedVoiceModel: String
-        get() = prefs.getString("selected_voice_model", "models/gemini-1.5-flash") ?: "models/gemini-1.5-flash"
+        get() = prefs.getString("selected_voice_model", "models/gemini-2.0-flash") ?: "models/gemini-2.0-flash"
         set(value) = prefs.edit().putString("selected_voice_model", value).apply()
+
+    /**
+     * 3. Test Console Model (For Interactive Testing Playground)
+     */
+    var selectedTestModel: String
+        get() = prefs.getString("selected_test_model", "models/gemini-2.0-flash") ?: "models/gemini-2.0-flash"
+        set(value) = prefs.edit().putString("selected_test_model", value).apply()
+
+    /**
+     * Gemini Voice Persona: "Aoede", "Kore", "Puck", "Charon", "Fenrir"
+     */
+    var geminiVoicePersona: String
+        get() = prefs.getString("gemini_voice_persona", "Aoede") ?: "Aoede"
+        set(value) = prefs.edit().putString("gemini_voice_persona", value).apply()
 
     var wakeWord: String
         get() = prefs.getString("wake_word", "hey komal") ?: "hey komal"
@@ -32,45 +52,11 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putString("app_language", value).apply()
 
     /**
-     * Gemini Native Speech Voice Persona: "Aoede", "Kore", "Puck", "Charon", "Fenrir"
-     */
-    var geminiVoicePersona: String
-        get() = prefs.getString("gemini_voice_persona", "Aoede") ?: "Aoede"
-        set(value) = prefs.edit().putString("gemini_voice_persona", value).apply()
-
-    var useGeminiNativeVoice: Boolean
-        get() = prefs.getBoolean("use_gemini_native_voice", true)
-        set(value) = prefs.edit().putBoolean("use_gemini_native_voice", value).apply()
-
-    /**
      * Fast offline action processing without calling Gemini API
      */
     var offlineModeEnabled: Boolean
         get() = prefs.getBoolean("offline_mode_enabled", true)
         set(value) = prefs.edit().putBoolean("offline_mode_enabled", value).apply()
-
-    /**
-     * UI Customization: "cyberpunk", "emerald", "ocean", "sunset"
-     */
-    var interfaceTheme: String
-        get() = prefs.getString("interface_theme", "cyberpunk") ?: "cyberpunk"
-        set(value) = prefs.edit().putString("interface_theme", value).apply()
-
-    var overlayPillSize: String
-        get() = prefs.getString("overlay_pill_size", "standard") ?: "standard"
-        set(value) = prefs.edit().putString("overlay_pill_size", value).apply()
-
-    var voiceLanguage: String
-        get() = prefs.getString("voice_language", "en_IN") ?: "en_IN"
-        set(value) = prefs.edit().putString("voice_language", value).apply()
-
-    var ttsPitch: Float
-        get() = prefs.getFloat("tts_pitch", 1.0f)
-        set(value) = prefs.edit().putFloat("tts_pitch", value).apply()
-
-    var ttsSpeed: Float
-        get() = prefs.getFloat("tts_speed", 1.0f)
-        set(value) = prefs.edit().putFloat("tts_speed", value).apply()
 
     var isVoiceWakeEnabled: Boolean
         get() = prefs.getBoolean("voice_wake_enabled", false)

@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -146,10 +147,10 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Mic,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
+                                painter = painterResource(id = com.komal.ai.R.drawable.ic_komal_logo),
+                                contentDescription = "Komal Logo",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(36.dp)
                             )
                         }
                         Column {
@@ -160,7 +161,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
                                 color = Color.White
                             )
                             Text(
-                                text = "Autonomous Phone Controller v1.1.0",
+                                text = "Autonomous Phone Controller v1.2.0",
                                 fontSize = 13.sp,
                                 color = Color.White.copy(alpha = 0.8f)
                             )

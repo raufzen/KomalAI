@@ -185,7 +185,8 @@ class VoiceWakeService : Service() {
         val isHinglish = app.preferencesManager.appLanguage != "english"
 
         FloatingOverlayService.show(this, if (isHinglish) "Sun rahi hoon..." else "Listening...")
-        app.ttsManager.speak(if (isHinglish) "Haan ji, boliye kya karun?" else "Yes, how can I help you?")
+        // Speak using Gemini native voice output (no robot TTS)
+        app.voiceSpeaker.speak(if (isHinglish) "Haan ji, boliye kya karun?" else "Yes, how can I help you?")
 
         mainHandler.postDelayed({
             startListening()
@@ -225,14 +226,12 @@ class VoiceWakeService : Service() {
     private fun processCommandWithGemini(command: String) {
         val app = application as? KomalApp ?: return
         val apiKey = app.preferencesManager.apiKey
-        val model = app.preferencesManager.selectedMainModel
+        val controllerModel = app.preferencesManager.selectedControllerModel
         val langMode = app.preferencesManager.appLanguage
         val voicePersona = app.preferencesManager.geminiVoicePersona
-        val useNativeVoice = app.preferencesManager.useGeminiNativeVoice
 
         if (apiKey.isBlank()) {
             FloatingOverlayService.update(this, "Error: Gemini API Key missing!")
-            app.ttsManager.speak(if (langMode == "english") "Please set your Gemini API Key in Komal AI settings" else "Please pehle Komal app me jaake Gemini API Key set karein")
             hideOverlayAfterDelay(3500)
             restartListeningLoop()
             return
@@ -244,12 +243,12 @@ class VoiceWakeService : Service() {
 
                 val result = app.geminiClient.planAction(
                     apiKey = apiKey,
-                    modelName = model,
+                    modelName = controllerModel,
                     userPrompt = command,
                     screenContext = screenHierarchy,
                     languageMode = langMode,
                     voicePersona = voicePersona,
-                    requestAudio = useNativeVoice
+                    requestAudio = true
                 )
 
                 result.onSuccess { candidate ->
@@ -260,14 +259,14 @@ class VoiceWakeService : Service() {
                         app.actionExecutor.executeFunctionCall(
                             call = part.functionCall,
                             apiKey = apiKey,
-                            selectedModel = model,
+                            selectedModel = controllerModel,
                             onStatusUpdate = { status ->
                                 FloatingOverlayService.update(this@VoiceWakeService, status)
                             }
                         )
                     }
 
-                    // Check for Gemini native speech audio
+                    // Play Gemini native speech audio if returned directly
                     val audioPart = candidate.content?.parts?.firstOrNull { it.inlineData != null }
                     if (audioPart?.inlineData != null) {
                         val inline = audioPart.inlineData
@@ -275,12 +274,11 @@ class VoiceWakeService : Service() {
                     } else if (!part?.text.isNullOrBlank()) {
                         val reply = part!!.text!!
                         FloatingOverlayService.update(this@VoiceWakeService, reply)
-                        app.ttsManager.speak(reply)
+                        app.voiceSpeaker.speak(reply)
                     }
                 }.onFailure { error ->
                     Log.e("VoiceWakeService", "Gemini error: ${error.message}", error)
                     FloatingOverlayService.update(this@VoiceWakeService, "Error: ${error.localizedMessage}")
-                    app.ttsManager.speak(if (langMode == "english") "Sorry, could not process command" else "Command process karne me problem aayi hai")
                 }
             } catch (e: Exception) {
                 Log.e("VoiceWakeService", "Command process exception", e)

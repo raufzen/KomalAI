@@ -116,7 +116,7 @@ class FloatingOverlayService : Service() {
 
         // Glowing Voice Indicator Icon
         val icon = ImageView(this).apply {
-            setImageResource(android.R.drawable.ic_btn_speak_now)
+            setImageResource(com.komal.ai.R.drawable.ic_komal_logo)
             setColorFilter(0xFF38BDF8.toInt()) // Light cyan glow
             val iconParams = LinearLayout.LayoutParams(54, 54).apply {
                 marginEnd = 20

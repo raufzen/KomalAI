@@ -29,12 +29,15 @@ import com.komal.ai.KomalApp
 import com.komal.ai.accessibility.KomalAccessibilityService
 import com.komal.ai.service.VoiceWakeService
 import com.komal.ai.ui.theme.*
+import com.komal.ai.updater.AppUpdateManager
+import kotlinx.coroutines.launch
 
 @Composable
 fun DashboardScreen(onNavigateToGemini: () -> Unit) {
     val context = LocalContext.current
     val app = context.applicationContext as KomalApp
     val prefs = app.preferencesManager
+    val scope = rememberCoroutineScope()
 
     var isAccessibilityActive by remember { mutableStateOf(KomalAccessibilityService.isServiceRunning) }
     var isVoiceActive by remember { mutableStateOf(prefs.isVoiceWakeEnabled) }
@@ -42,10 +45,22 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
         mutableStateOf(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) Settings.canDrawOverlays(context) else true)
     }
 
+    var updateInfo by remember { mutableStateOf<AppUpdateManager.UpdateInfo?>(null) }
+    var isDownloadingUpdate by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         isAccessibilityActive = KomalAccessibilityService.isServiceRunning
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             isOverlayGranted = Settings.canDrawOverlays(context)
+        }
+        // Check for updates from GitHub in background
+        scope.launch {
+            val res = app.updateManager.checkForUpdates()
+            res.onSuccess { info ->
+                if (info?.isUpdateAvailable == true) {
+                    updateInfo = info
+                }
+            }
         }
     }
 
@@ -57,6 +72,51 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // In-App Update Banner (Shown when GitHub release is newer)
+        if (updateInfo != null && updateInfo!!.isUpdateAvailable) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E3A8A)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.SystemUpdate, contentDescription = null, tint = AccentCyanLight)
+                        Text(
+                            text = "New Update Available: ${updateInfo!!.latestVersion}",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 15.sp
+                        )
+                    }
+                    Text(
+                        text = updateInfo!!.releaseNotes,
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = 2
+                    )
+                    Button(
+                        onClick = {
+                            isDownloadingUpdate = true
+                            app.updateManager.downloadAndInstallApk(updateInfo!!.downloadUrl) {
+                                isDownloadingUpdate = false
+                            }
+                        },
+                        enabled = !isDownloadingUpdate,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan)
+                    ) {
+                        Icon(imageVector = Icons.Default.Download, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(if (isDownloadingUpdate) "Downloading Update..." else "Update & Install Now")
+                    }
+                }
+            }
+        }
+
         // Hero Header Card
         Card(
             shape = RoundedCornerShape(20.dp),
@@ -100,7 +160,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
                                 color = Color.White
                             )
                             Text(
-                                text = "Autonomous Phone Controller & Voice Agent",
+                                text = "Autonomous Phone Controller v1.1.0",
                                 fontSize = 13.sp,
                                 color = Color.White.copy(alpha = 0.8f)
                             )
@@ -110,7 +170,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "Try saying: \"Hey Komal, WhatsApp pe Rahul ko Hello bhejo\" or \"Play songs on YouTube\"",
+                        text = "Say: \"Hey Komal, WhatsApp open karke Rahul ko message karo\" or \"YouTube pe gaane chalao\"",
                         fontSize = 13.sp,
                         color = Color.White.copy(alpha = 0.9f),
                         lineHeight = 18.sp
@@ -234,7 +294,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
 
                 val hasKey = prefs.apiKey.isNotBlank()
                 Text(
-                    text = if (hasKey) "Active Model: ${prefs.selectedMainModel}" else "Gemini API Key is not set yet!",
+                    text = if (hasKey) "Active Model: ${prefs.selectedMainModel} (Voice: ${prefs.geminiVoicePersona})" else "Gemini API Key is not set yet!",
                     fontSize = 13.sp,
                     color = if (hasKey) AccentEmerald else AccentRose
                 )

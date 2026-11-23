@@ -164,13 +164,16 @@ class GeminiApiClient {
 
     /**
      * Ask Gemini model to decide which phone action or response to execute
+     * Supports optional native voice audio generation config
      */
     suspend fun planAction(
         apiKey: String,
         modelName: String,
         userPrompt: String,
         screenContext: String = "",
-        languageMode: String = "hinglish"
+        languageMode: String = "hinglish",
+        voicePersona: String = "Aoede",
+        requestAudio: Boolean = false
     ): Result<GeminiCandidate> = withContext(Dispatchers.IO) {
         try {
             val cleanModel = modelName.removePrefix("models/")
@@ -201,6 +204,20 @@ class GeminiApiClient {
                 6. Accompany actions with a brief polite voice reply using speak_to_user.
             """.trimIndent()
 
+            val generationConfig = if (requestAudio) {
+                GeminiGenerationConfig(
+                    temperature = 0.2f,
+                    responseModalities = listOf("TEXT", "AUDIO"),
+                    speechConfig = GeminiSpeechConfig(
+                        voiceConfig = GeminiVoiceConfig(
+                            prebuiltVoiceConfig = GeminiPrebuiltVoiceConfig(voiceName = voicePersona)
+                        )
+                    )
+                )
+            } else {
+                GeminiGenerationConfig(temperature = 0.2f)
+            }
+
             val requestPayload = GeminiGenerateRequest(
                 contents = listOf(
                     GeminiContent(
@@ -213,7 +230,7 @@ class GeminiApiClient {
                     parts = listOf(GeminiPart(text = systemPrompt))
                 ),
                 tools = getPhoneTools(),
-                generationConfig = GeminiGenerationConfig(temperature = 0.1f)
+                generationConfig = generationConfig
             )
 
             val jsonBody = gson.toJson(requestPayload)
@@ -226,6 +243,10 @@ class GeminiApiClient {
             val responseText = response.body?.string() ?: ""
 
             if (!response.isSuccessful) {
+                // If model does not support audio modalities, retry without audio config
+                if (requestAudio && response.code == 400) {
+                    return@withContext planAction(apiKey, modelName, userPrompt, screenContext, languageMode, voicePersona, requestAudio = false)
+                }
                 return@withContext Result.failure(Exception("HTTP ${response.code}: $responseText"))
             }
 

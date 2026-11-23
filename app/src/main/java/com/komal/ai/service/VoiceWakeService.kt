@@ -24,7 +24,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 class VoiceWakeService : Service() {
 
@@ -195,6 +194,7 @@ class VoiceWakeService : Service() {
 
     private fun handleRecognizedSpeech(recognized: String) {
         val app = application as? KomalApp ?: return
+        val isHinglish = app.preferencesManager.appLanguage != "english"
 
         if (!isCommandMode) {
             if (containsWakeWord(recognized)) {
@@ -204,7 +204,20 @@ class VoiceWakeService : Service() {
             }
         } else {
             isCommandMode = false
-            FloatingOverlayService.update(this, "Thinking: \"$recognized\"")
+            FloatingOverlayService.update(this, "Recognized: \"$recognized\"")
+
+            // 1. Check Offline Intent Engine first!
+            if (app.preferencesManager.offlineModeEnabled) {
+                val executedOffline = app.offlineEngine.tryExecuteOffline(recognized, isHinglish)
+                if (executedOffline) {
+                    FloatingOverlayService.update(this, "Executed offline!")
+                    hideOverlayAfterDelay(2500)
+                    restartListeningLoop()
+                    return
+                }
+            }
+
+            // 2. If not handled offline, route to Gemini AI
             processCommandWithGemini(recognized)
         }
     }
@@ -214,6 +227,8 @@ class VoiceWakeService : Service() {
         val apiKey = app.preferencesManager.apiKey
         val model = app.preferencesManager.selectedMainModel
         val langMode = app.preferencesManager.appLanguage
+        val voicePersona = app.preferencesManager.geminiVoicePersona
+        val useNativeVoice = app.preferencesManager.useGeminiNativeVoice
 
         if (apiKey.isBlank()) {
             FloatingOverlayService.update(this, "Error: Gemini API Key missing!")
@@ -232,11 +247,15 @@ class VoiceWakeService : Service() {
                     modelName = model,
                     userPrompt = command,
                     screenContext = screenHierarchy,
-                    languageMode = langMode
+                    languageMode = langMode,
+                    voicePersona = voicePersona,
+                    requestAudio = useNativeVoice
                 )
 
                 result.onSuccess { candidate ->
                     val part = candidate.content?.parts?.firstOrNull()
+
+                    // Check for function call
                     if (part?.functionCall != null) {
                         app.actionExecutor.executeFunctionCall(
                             call = part.functionCall,
@@ -246,6 +265,13 @@ class VoiceWakeService : Service() {
                                 FloatingOverlayService.update(this@VoiceWakeService, status)
                             }
                         )
+                    }
+
+                    // Check for Gemini native speech audio
+                    val audioPart = candidate.content?.parts?.firstOrNull { it.inlineData != null }
+                    if (audioPart?.inlineData != null) {
+                        val inline = audioPart.inlineData
+                        app.audioPlayer.playBase64Audio(inline.data, inline.mimeType)
                     } else if (!part?.text.isNullOrBlank()) {
                         val reply = part!!.text!!
                         FloatingOverlayService.update(this@VoiceWakeService, reply)
@@ -282,5 +308,6 @@ class VoiceWakeService : Service() {
         speechRecognizer?.destroy()
         speechRecognizer = null
         FloatingOverlayService.hide(this)
+        (application as? KomalApp)?.audioPlayer?.stop()
     }
 }

@@ -12,21 +12,44 @@ android {
         applicationId = "com.komal.ai"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        create("release") {
+            val ks = file("keystore.jks")
+            if (ks.exists()) {
+                storeFile = ks
+                storePassword = "komalai123"
+                keyAlias = "komalkey"
+                keyPassword = "komalai123"
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            val ks = file("keystore.jks")
+            if (ks.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
+        debug {
+            val ks = file("keystore.jks")
+            if (ks.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -53,7 +76,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
 
-    // Networking & JSON for Gemini API
+    // Networking & JSON for Gemini API & GitHub Updater
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.gson)

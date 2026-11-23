@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import com.komal.ai.KomalApp
 import com.komal.ai.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VoiceSettingsScreen() {
     val context = LocalContext.current
@@ -27,10 +28,14 @@ fun VoiceSettingsScreen() {
 
     var appLanguage by remember { mutableStateOf(prefs.appLanguage) }
     var wakeWordInput by remember { mutableStateOf(prefs.wakeWord) }
+    var useGeminiVoice by remember { mutableStateOf(prefs.useGeminiNativeVoice) }
+    var selectedPersona by remember { mutableStateOf(prefs.geminiVoicePersona) }
+    var offlineMode by remember { mutableStateOf(prefs.offlineModeEnabled) }
     var speechPitch by remember { mutableFloatStateOf(prefs.ttsPitch) }
     var speechSpeed by remember { mutableFloatStateOf(prefs.ttsSpeed) }
 
     val presetWakePhrases = listOf("hey komal", "suno komal", "komal", "ok komal")
+    val geminiPersonas = listOf("Aoede", "Kore", "Puck", "Charon", "Fenrir")
 
     Column(
         modifier = Modifier
@@ -48,17 +53,140 @@ fun VoiceSettingsScreen() {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Voice & Language Settings",
+                    text = "Voice & AI Speech Settings",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Select your preferred assistant language (Hinglish or English), wake phrase, and customize voice pitch and speed.",
+                    text = "Configure Gemini AI native voices, offline quick actions, response language, and background wake phrases.",
                     fontSize = 13.sp,
                     color = TextSecondary,
                     lineHeight = 18.sp
+                )
+            }
+        }
+
+        // Gemini AI Native Voice Persona Card
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = DarkSurface),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Gemini AI Native Voice",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
+                            color = AccentCyanLight
+                        )
+                        Text(
+                            text = "Use realistic Gemini API voice instead of robotic phone TTS",
+                            fontSize = 12.sp,
+                            color = TextSecondary
+                        )
+                    }
+                    Switch(
+                        checked = useGeminiVoice,
+                        onCheckedChange = {
+                            useGeminiVoice = it
+                            prefs.useGeminiNativeVoice = it
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = AccentCyan
+                        )
+                    )
+                }
+
+                if (useGeminiVoice) {
+                    Divider(color = DarkCard)
+                    Text(
+                        text = "Choose Gemini Voice Persona:",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextPrimary
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        geminiPersonas.forEach { persona ->
+                            FilterChip(
+                                selected = selectedPersona == persona,
+                                onClick = {
+                                    selectedPersona = persona
+                                    prefs.geminiVoicePersona = persona
+                                    Toast.makeText(context, "Voice Persona: $persona", Toast.LENGTH_SHORT).show()
+                                },
+                                label = { Text(persona) }
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = when (selectedPersona) {
+                            "Aoede" -> "Aoede: Warm, natural, expressive female voice (Recommended for Komal)"
+                            "Kore" -> "Kore: Gentle, soothing, relaxed female voice"
+                            "Puck" -> "Puck: Youthful, energetic, friendly voice"
+                            "Charon" -> "Charon: Deep, calm, mature voice"
+                            else -> "Fenrir: Crisp, authoritative, sharp voice"
+                        },
+                        fontSize = 11.sp,
+                        color = AccentEmerald
+                    )
+                }
+            }
+        }
+
+        // Offline Fast Mode Card
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = DarkSurface),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Offline Fast Mode (Zero Latency)",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "Executes basic actions (Open WhatsApp, YouTube, Camera, Home, Back, Recents) instantly without Gemini API",
+                        fontSize = 12.sp,
+                        color = if (offlineMode) AccentEmerald else TextSecondary,
+                        lineHeight = 16.sp
+                    )
+                }
+                Switch(
+                    checked = offlineMode,
+                    onCheckedChange = {
+                        offlineMode = it
+                        prefs.offlineModeEnabled = it
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = AccentEmerald
+                    )
                 )
             }
         }
@@ -74,23 +202,16 @@ fun VoiceSettingsScreen() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Assistant Response Language",
+                    text = "Response Language",
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp,
                     color = AccentCyanLight
-                )
-
-                Text(
-                    text = "Choose how Komal talks and replies to your commands:",
-                    fontSize = 12.sp,
-                    color = TextSecondary
                 )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Option 1: Hinglish
                     FilterChip(
                         selected = appLanguage == "hinglish",
                         onClick = {
@@ -107,7 +228,6 @@ fun VoiceSettingsScreen() {
                         }
                     )
 
-                    // Option 2: English
                     FilterChip(
                         selected = appLanguage == "english",
                         onClick = {
@@ -144,13 +264,6 @@ fun VoiceSettingsScreen() {
                     color = AccentCyanLight
                 )
 
-                Text(
-                    text = "Say this phrase anytime in the background to activate Komal:",
-                    fontSize = 12.sp,
-                    color = TextSecondary
-                )
-
-                // Presets
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -186,89 +299,22 @@ fun VoiceSettingsScreen() {
             }
         }
 
-        // TTS Voice Customization
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurface),
-            modifier = Modifier.fillMaxWidth()
+        // Test Voice Button
+        Button(
+            onClick = {
+                val sampleText = if (appLanguage == "english") {
+                    "Hello! I am Komal, your voice-activated AI phone controller."
+                } else {
+                    "Hello! Main Komal hoon, aapki AI phone controller."
+                }
+                app.ttsManager.speak(sampleText, pitch = speechPitch, speed = speechSpeed)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigoDark)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Text(
-                    text = "Text-to-Speech Voice Controls",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    color = AccentCyanLight
-                )
-
-                // Speed Slider
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = "Speech Speed", fontSize = 13.sp, color = TextPrimary)
-                        Text(text = String.format("%.2fx", speechSpeed), fontSize = 13.sp, color = AccentEmerald)
-                    }
-                    Slider(
-                        value = speechSpeed,
-                        onValueChange = {
-                            speechSpeed = it
-                            prefs.ttsSpeed = it
-                        },
-                        valueRange = 0.6f..1.6f,
-                        steps = 10,
-                        colors = SliderDefaults.colors(
-                            thumbColor = AccentEmerald,
-                            activeTrackColor = AccentEmerald
-                        )
-                    )
-                }
-
-                // Pitch Slider
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = "Voice Pitch", fontSize = 13.sp, color = TextPrimary)
-                        Text(text = String.format("%.2fx", speechPitch), fontSize = 13.sp, color = AccentCyan)
-                    }
-                    Slider(
-                        value = speechPitch,
-                        onValueChange = {
-                            speechPitch = it
-                            prefs.ttsPitch = it
-                        },
-                        valueRange = 0.7f..1.4f,
-                        steps = 7,
-                        colors = SliderDefaults.colors(
-                            thumbColor = AccentCyan,
-                            activeTrackColor = AccentCyan
-                        )
-                    )
-                }
-
-                // Test Voice Button
-                Button(
-                    onClick = {
-                        val sampleText = if (appLanguage == "english") {
-                            "Hello! I am Komal, your autonomous AI phone controller. I can open WhatsApp, play YouTube, and control your device on your voice command."
-                        } else {
-                            "Hello! Main Komal hoon, aapki AI phone controller. Main aapke voice command pe WhatsApp, YouTube aur pura phone chala sakti hoon."
-                        }
-                        app.ttsManager.speak(sampleText, pitch = speechPitch, speed = speechSpeed)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigoDark)
-                ) {
-                    Icon(imageVector = Icons.Default.VolumeUp, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Test Komal Voice")
-                }
-            }
+            Icon(imageVector = Icons.Default.VolumeUp, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Test Voice Speech")
         }
     }
 }

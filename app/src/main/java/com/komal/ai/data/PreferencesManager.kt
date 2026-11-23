@@ -27,12 +27,38 @@ class PreferencesManager(context: Context) {
         get() = prefs.getString("wake_word", "hey komal") ?: "hey komal"
         set(value) = prefs.edit().putString("wake_word", value).apply()
 
-    /**
-     * App language: "hinglish" or "english"
-     */
     var appLanguage: String
         get() = prefs.getString("app_language", "hinglish") ?: "hinglish"
         set(value) = prefs.edit().putString("app_language", value).apply()
+
+    /**
+     * Gemini Native Speech Voice Persona: "Aoede", "Kore", "Puck", "Charon", "Fenrir"
+     */
+    var geminiVoicePersona: String
+        get() = prefs.getString("gemini_voice_persona", "Aoede") ?: "Aoede"
+        set(value) = prefs.edit().putString("gemini_voice_persona", value).apply()
+
+    var useGeminiNativeVoice: Boolean
+        get() = prefs.getBoolean("use_gemini_native_voice", true)
+        set(value) = prefs.edit().putBoolean("use_gemini_native_voice", value).apply()
+
+    /**
+     * Fast offline action processing without calling Gemini API
+     */
+    var offlineModeEnabled: Boolean
+        get() = prefs.getBoolean("offline_mode_enabled", true)
+        set(value) = prefs.edit().putBoolean("offline_mode_enabled", value).apply()
+
+    /**
+     * UI Customization: "cyberpunk", "emerald", "ocean", "sunset"
+     */
+    var interfaceTheme: String
+        get() = prefs.getString("interface_theme", "cyberpunk") ?: "cyberpunk"
+        set(value) = prefs.edit().putString("interface_theme", value).apply()
+
+    var overlayPillSize: String
+        get() = prefs.getString("overlay_pill_size", "standard") ?: "standard"
+        set(value) = prefs.edit().putString("overlay_pill_size", value).apply()
 
     var voiceLanguage: String
         get() = prefs.getString("voice_language", "en_IN") ?: "en_IN"

@@ -26,7 +26,7 @@ data class GeminiModelItem(
 }
 
 /**
- * Request & Response payload for Gemini generateContent
+ * Request payload for Gemini generateContent
  */
 data class GeminiGenerateRequest(
     @SerializedName("contents") val contents: List<GeminiContent>,
@@ -43,7 +43,13 @@ data class GeminiContent(
 data class GeminiPart(
     @SerializedName("text") val text: String? = null,
     @SerializedName("functionCall") val functionCall: GeminiFunctionCall? = null,
-    @SerializedName("functionResponse") val functionResponse: GeminiFunctionResponse? = null
+    @SerializedName("functionResponse") val functionResponse: GeminiFunctionResponse? = null,
+    @SerializedName("inlineData") val inlineData: GeminiInlineData? = null
+)
+
+data class GeminiInlineData(
+    @SerializedName("mimeType") val mimeType: String,
+    @SerializedName("data") val data: String
 )
 
 data class GeminiFunctionCall(
@@ -69,7 +75,21 @@ data class GeminiFunctionDeclaration(
 data class GeminiGenerationConfig(
     @SerializedName("temperature") val temperature: Float? = 0.2f,
     @SerializedName("topP") val topP: Float? = 0.95f,
-    @SerializedName("maxOutputTokens") val maxOutputTokens: Int? = 1024
+    @SerializedName("maxOutputTokens") val maxOutputTokens: Int? = 1024,
+    @SerializedName("responseModalities") val responseModalities: List<String>? = null,
+    @SerializedName("speechConfig") val speechConfig: GeminiSpeechConfig? = null
+)
+
+data class GeminiSpeechConfig(
+    @SerializedName("voiceConfig") val voiceConfig: GeminiVoiceConfig
+)
+
+data class GeminiVoiceConfig(
+    @SerializedName("prebuiltVoiceConfig") val prebuiltVoiceConfig: GeminiPrebuiltVoiceConfig
+)
+
+data class GeminiPrebuiltVoiceConfig(
+    @SerializedName("voiceName") val voiceName: String // "Aoede", "Kore", "Puck", "Charon", "Fenrir"
 )
 
 data class GeminiGenerateResponse(

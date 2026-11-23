@@ -43,7 +43,7 @@ fun TestConsoleScreen() {
     var logs by remember {
         mutableStateOf(
             listOf(
-                ConsoleLogItem("00:00", "System", "कोमल AI टेस्ट कंसोल तैयार है। नीचे दिए गए बटन दबाएं या अपना कमांड टाइप करें।")
+                ConsoleLogItem("00:00", "System", "Komal AI Test Console is ready. Tap any quick command below or type your instruction.")
             )
         )
     }
@@ -57,7 +57,7 @@ fun TestConsoleScreen() {
         if (cmd.isBlank() || isExecuting) return
         val apiKey = prefs.apiKey
         if (apiKey.isBlank()) {
-            addLog("System", "त्रुटि: पहले Gemini API Key सेट करें!")
+            addLog("System", "Error: Please set your Gemini API Key in Gemini AI tab first!")
             return
         }
 
@@ -70,20 +70,22 @@ fun TestConsoleScreen() {
             try {
                 val screenContext = KomalAccessibilityService.instance?.dumpScreenHierarchy() ?: ""
                 val model = prefs.selectedMainModel
+                val langMode = prefs.appLanguage
 
-                addLog("Gemini", "मॉडल '$model' से योजना बन रही है...")
+                addLog("Gemini", "Planning action using model '$model' ($langMode)...")
                 val result = app.geminiClient.planAction(
                     apiKey = apiKey,
                     modelName = model,
                     userPrompt = cmd,
-                    screenContext = screenContext
+                    screenContext = screenContext,
+                    languageMode = langMode
                 )
 
                 result.onSuccess { candidate ->
                     val part = candidate.content?.parts?.firstOrNull()
                     if (part?.functionCall != null) {
                         val call = part.functionCall
-                        addLog("Executor", "टूल क्रिया: ${call.name}\nतर्क: ${call.args}", isAction = true)
+                        addLog("Executor", "Tool Call: ${call.name}\nArgs: ${call.args}", isAction = true)
                         app.actionExecutor.executeFunctionCall(
                             call = call,
                             apiKey = apiKey,
@@ -97,7 +99,7 @@ fun TestConsoleScreen() {
                         app.ttsManager.speak(part.text ?: "")
                     }
                 }.onFailure { e ->
-                    addLog("System", "त्रुटि: ${e.localizedMessage}")
+                    addLog("System", "Error: ${e.localizedMessage}")
                 }
             } catch (e: Exception) {
                 addLog("System", "Exception: ${e.message}")
@@ -116,7 +118,7 @@ fun TestConsoleScreen() {
     ) {
         // Sample command quick chips
         Text(
-            text = "त्वरित परीक्षण कमांड्स (Quick Commands):",
+            text = "Quick Test Commands:",
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,
             color = AccentCyanLight
@@ -127,16 +129,16 @@ fun TestConsoleScreen() {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             SuggestionChip(
-                onClick = { executeTestCommand("YouTube ओपन करके Arijit Singh सर्च करो") },
-                label = { Text("YouTube गाने", fontSize = 11.sp) }
+                onClick = { executeTestCommand("YouTube pe Arijit Singh ke gaane chalao") },
+                label = { Text("YouTube Songs", fontSize = 11.sp) }
             )
             SuggestionChip(
-                onClick = { executeTestCommand("WhatsApp ओपन करो") },
-                label = { Text("WhatsApp खोलें", fontSize = 11.sp) }
+                onClick = { executeTestCommand("WhatsApp open karo") },
+                label = { Text("Open WhatsApp", fontSize = 11.sp) }
             )
             SuggestionChip(
-                onClick = { executeTestCommand("आज का ताजा न्यूज़ बोलो") },
-                label = { Text("आज का न्यूज़", fontSize = 11.sp) }
+                onClick = { executeTestCommand("Aaj ki latest news batao") },
+                label = { Text("Today's News", fontSize = 11.sp) }
             )
         }
 
@@ -206,7 +208,7 @@ fun TestConsoleScreen() {
             OutlinedTextField(
                 value = inputText,
                 onValueChange = { inputText = it },
-                placeholder = { Text("कमांड लिखें... जैसे: आज का न्यूज़ बोलो") },
+                placeholder = { Text("Type instruction... e.g. Open YouTube") },
                 modifier = Modifier.weight(1f),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryIndigo,

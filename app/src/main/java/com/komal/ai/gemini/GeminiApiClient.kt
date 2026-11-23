@@ -94,11 +94,11 @@ class GeminiApiClient {
             ),
             GeminiFunctionDeclaration(
                 name = "read_today_news",
-                description = "Reads today's latest news, headlines, or updates on a specified topic or general news in Hindi or English.",
+                description = "Fetches and reads today's latest news, headlines, or updates on a specified topic.",
                 parameters = mapOf(
                     "type" to "OBJECT",
                     "properties" to mapOf(
-                        "topic" to mapOf("type" to "STRING", "description" to "The news topic or category (e.g. 'general', 'technology', 'sports', 'India')")
+                        "topic" to mapOf("type" to "STRING", "description" to "The news topic or category (e.g. 'general', 'technology', 'sports', 'India', 'world')")
                     ),
                     "required" to listOf("topic")
                 )
@@ -149,7 +149,7 @@ class GeminiApiClient {
             ),
             GeminiFunctionDeclaration(
                 name = "speak_to_user",
-                description = "Directly speaks a spoken response back to the user in a natural, polite Hindi/English voice.",
+                description = "Directly speaks a spoken response back to the user.",
                 parameters = mapOf(
                     "type" to "OBJECT",
                     "properties" to mapOf(
@@ -169,29 +169,36 @@ class GeminiApiClient {
         apiKey: String,
         modelName: String,
         userPrompt: String,
-        screenContext: String = ""
+        screenContext: String = "",
+        languageMode: String = "hinglish"
     ): Result<GeminiCandidate> = withContext(Dispatchers.IO) {
         try {
             val cleanModel = modelName.removePrefix("models/")
             val url = "https://generativelanguage.googleapis.com/v1beta/models/$cleanModel:generateContent?key=${apiKey.trim()}"
 
+            val langGuidance = if (languageMode.equals("english", ignoreCase = true)) {
+                "Speak in clear, professional English. (e.g. 'Opening WhatsApp...', 'Searching YouTube for you', etc.)"
+            } else {
+                "Speak in natural, friendly Hinglish (English alphabet + conversational Hindi, e.g. 'Opening WhatsApp...', 'YouTube pe search kar rahi hoon', 'Rahul ko message bhej diya'). Avoid pure Devanagari script."
+            }
+
             val systemPrompt = """
-                You are Komal (कोमल), an intelligent voice-controlled AI assistant and Android Phone Controller.
-                Your task is to control the user's phone, execute commands, navigate apps, and answer queries.
+                You are Komal, an intelligent voice-controlled AI assistant and Android Phone Controller.
+                Your job is to control the user's phone, execute user commands, navigate apps, and answer queries.
                 
-                Always be helpful, fast, and polite.
-                You understand Hindi, Hinglish, and English fluently.
+                Language Style:
+                $langGuidance
                 
                 Current Screen Context:
                 $screenContext
                 
-                Guidelines:
-                1. If the user asks to open WhatsApp and message someone, use whatsapp_send or open_app and click/type.
-                2. If the user asks to search or play something on YouTube, use youtube_search.
-                3. If the user asks for news, use read_today_news or speak_to_user with news highlights.
-                4. If the user says go back/home, use navigate_phone.
-                5. If an on-screen action is requested, use click_screen_element or type_text.
-                6. When executing an action, you can also accompany it with a pleasant voice reply.
+                Rules:
+                1. If user asks to open WhatsApp or send a message, call whatsapp_send or open_app.
+                2. If user asks to search or play something on YouTube, call youtube_search.
+                3. If user asks for news or info, call read_today_news or speak_to_user.
+                4. If user asks for system navigation (home, back, recents), call navigate_phone.
+                5. If an on-screen element or input is requested, call click_screen_element or type_text.
+                6. Accompany actions with a brief polite voice reply using speak_to_user.
             """.trimIndent()
 
             val requestPayload = GeminiGenerateRequest(

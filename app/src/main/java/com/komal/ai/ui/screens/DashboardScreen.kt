@@ -100,7 +100,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
                                 color = Color.White
                             )
                             Text(
-                                text = "Phone Controller & Voice Automation",
+                                text = "Autonomous Phone Controller & Voice Agent",
                                 fontSize = 13.sp,
                                 color = Color.White.copy(alpha = 0.8f)
                             )
@@ -110,7 +110,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "बोलिए: \"सुनो कोमल, WhatsApp पर Rahul को मैसेज करो\" या \"YouTube पर गाने चलाओ\"",
+                        text = "Try saying: \"Hey Komal, WhatsApp pe Rahul ko Hello bhejo\" or \"Play songs on YouTube\"",
                         fontSize = 13.sp,
                         color = Color.White.copy(alpha = 0.9f),
                         lineHeight = 18.sp
@@ -134,13 +134,13 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "पृष्ठभूमि वॉयस सेवा (Background Wake)",
+                        text = "Background Voice Wake-up",
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         color = TextPrimary
                     )
                     Text(
-                        text = if (isVoiceActive) "सक्रिय है - 'सुनो कोमल' सुन रहा है" else "निष्क्रिय - चालू करने के लिए स्विच दबाएं",
+                        text = if (isVoiceActive) "Active - Listening for '${prefs.wakeWord}'" else "Disabled - Toggle switch to enable",
                         fontSize = 12.sp,
                         color = if (isVoiceActive) AccentEmerald else TextSecondary
                     )
@@ -166,7 +166,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
         }
 
         Text(
-            text = "सिस्टम अनुमतियां (System Permissions)",
+            text = "Required Permissions",
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             color = AccentCyanLight
@@ -175,7 +175,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
         // Permission Card 1: Accessibility Service
         PermissionStatusCard(
             title = "Phone Controller Accessibility Service",
-            subtitle = "फ़ोन स्क्रीन पढ़ने, WhatsApp में टाइपिंग और क्लिक करने के लिए आवश्यक है",
+            subtitle = "Required to inspect screen, auto-type in WhatsApp, tap buttons and scroll",
             icon = Icons.Default.Accessibility,
             isGranted = isAccessibilityActive,
             actionLabel = "Enable in Settings",
@@ -190,10 +190,10 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
         // Permission Card 2: Draw Over Other Apps (Overlay)
         PermissionStatusCard(
             title = "Floating Assistant Bubble (Overlay)",
-            subtitle = "फ़ोन पर किसी भी ऐप के ऊपर कोमल का फ्लोटिंग इंटरफ़ेस दिखाने के लिए",
+            subtitle = "Shows dynamic floating pill indicator over other apps when Komal is active",
             icon = Icons.Default.Layers,
             isGranted = isOverlayGranted,
-            actionLabel = "Grant Overlay",
+            actionLabel = "Grant Overlay Permission",
             onClick = {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     val intent = Intent(
@@ -207,7 +207,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
             }
         )
 
-        // Gemini API Configuration Quick Card
+        // Gemini AI Quick Status Card
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = DarkSurface),
@@ -224,7 +224,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
                         tint = AccentCyan
                     )
                     Text(
-                        text = "Google Gemini AI मॉडल स्थिति",
+                        text = "Google Gemini AI Status",
                         fontWeight = FontWeight.SemiBold,
                         color = TextPrimary
                     )
@@ -234,7 +234,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
 
                 val hasKey = prefs.apiKey.isNotBlank()
                 Text(
-                    text = if (hasKey) "सक्रिय मॉडल: ${prefs.selectedMainModel}" else "Gemini API Key अभी सेट नहीं है!",
+                    text = if (hasKey) "Active Model: ${prefs.selectedMainModel}" else "Gemini API Key is not set yet!",
                     fontSize = 13.sp,
                     color = if (hasKey) AccentEmerald else AccentRose
                 )
@@ -246,7 +246,7 @@ fun DashboardScreen(onNavigateToGemini: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentCyan)
                 ) {
-                    Text("API Key और मॉडल कॉन्फ़िगर करें")
+                    Text("Configure API Key & Models")
                 }
             }
         }
@@ -296,7 +296,7 @@ fun PermissionStatusCard(
                     contentColor = if (isGranted) AccentEmerald else AccentAmber
                 ) {
                     Text(
-                        text = if (isGranted) "Active" else "Needed",
+                        text = if (isGranted) "Granted" else "Required",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)

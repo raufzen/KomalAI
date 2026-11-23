@@ -27,8 +27,15 @@ class PreferencesManager(context: Context) {
         get() = prefs.getString("wake_word", "hey komal") ?: "hey komal"
         set(value) = prefs.edit().putString("wake_word", value).apply()
 
+    /**
+     * App language: "hinglish" or "english"
+     */
+    var appLanguage: String
+        get() = prefs.getString("app_language", "hinglish") ?: "hinglish"
+        set(value) = prefs.edit().putString("app_language", value).apply()
+
     var voiceLanguage: String
-        get() = prefs.getString("voice_language", "hi_IN") ?: "hi_IN"
+        get() = prefs.getString("voice_language", "en_IN") ?: "en_IN"
         set(value) = prefs.edit().putString("voice_language", value).apply()
 
     var ttsPitch: Float

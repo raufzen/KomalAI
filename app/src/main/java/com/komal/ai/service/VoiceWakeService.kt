@@ -23,7 +23,6 @@ import com.komal.ai.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -61,7 +60,7 @@ class VoiceWakeService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification("Komal AI पृष्ठभूमि में सक्रिय है - 'सुनो कोमल' बोलें"))
+        startForeground(NOTIFICATION_ID, buildNotification("Komal AI is active in background - Say 'Hey Komal'"))
         initSpeechRecognizer()
     }
 
@@ -93,7 +92,7 @@ class VoiceWakeService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Komal AI Voice Assistant")
+            .setContentTitle("Komal AI Voice Controller")
             .setContentText(statusText)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(pendingIntent)
@@ -110,9 +109,8 @@ class VoiceWakeService : Service() {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         recognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
-            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "hi-IN")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-IN")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "en-IN")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
         }
@@ -131,7 +129,6 @@ class VoiceWakeService : Service() {
 
             override fun onError(error: Int) {
                 isListening = false
-                // Auto restart speech listener after brief delay
                 mainHandler.postDelayed({
                     startListening()
                 }, 1000)
@@ -178,22 +175,22 @@ class VoiceWakeService : Service() {
     private fun containsWakeWord(text: String): Boolean {
         val app = application as? KomalApp ?: return false
         val wakeWord = app.preferencesManager.wakeWord.lowercase().trim()
-        val hindiVariations = listOf("komal", "hey komal", "कोमल", "सुनो कोमल", "ok komal", "hello komal")
+        val variations = listOf("komal", "hey komal", "suno komal", "ok komal", "hello komal", "कोमल", "सुनो कोमल")
 
-        return text.contains(wakeWord) || hindiVariations.any { text.contains(it) }
+        return text.contains(wakeWord) || variations.any { text.contains(it) }
     }
 
     private fun triggerWakeMode() {
         isCommandMode = true
         val app = application as? KomalApp ?: return
+        val isHinglish = app.preferencesManager.appLanguage != "english"
 
-        FloatingOverlayService.show(this, "सुन रही हूँ... आज्ञा दीजिए")
-        app.ttsManager.speak("हाँ जी, कहिए क्या करूँ?")
+        FloatingOverlayService.show(this, if (isHinglish) "Sun rahi hoon..." else "Listening...")
+        app.ttsManager.speak(if (isHinglish) "Haan ji, boliye kya karun?" else "Yes, how can I help you?")
 
-        // Wait for TTS to finish speaking and capture command
         mainHandler.postDelayed({
             startListening()
-        }, 1600)
+        }, 1500)
     }
 
     private fun handleRecognizedSpeech(recognized: String) {
@@ -206,10 +203,8 @@ class VoiceWakeService : Service() {
                 restartListeningLoop()
             }
         } else {
-            // Process the full phone command!
             isCommandMode = false
             FloatingOverlayService.update(this, "Thinking: \"$recognized\"")
-
             processCommandWithGemini(recognized)
         }
     }
@@ -218,10 +213,11 @@ class VoiceWakeService : Service() {
         val app = application as? KomalApp ?: return
         val apiKey = app.preferencesManager.apiKey
         val model = app.preferencesManager.selectedMainModel
+        val langMode = app.preferencesManager.appLanguage
 
         if (apiKey.isBlank()) {
             FloatingOverlayService.update(this, "Error: Gemini API Key missing!")
-            app.ttsManager.speak("कृपया पहले Komal ऐप में जाकर Gemini API Key सेट करें")
+            app.ttsManager.speak(if (langMode == "english") "Please set your Gemini API Key in Komal AI settings" else "Please pehle Komal app me jaake Gemini API Key set karein")
             hideOverlayAfterDelay(3500)
             restartListeningLoop()
             return
@@ -229,14 +225,14 @@ class VoiceWakeService : Service() {
 
         scope.launch {
             try {
-                // Get current screen tree from accessibility service
                 val screenHierarchy = KomalAccessibilityService.instance?.dumpScreenHierarchy() ?: ""
 
                 val result = app.geminiClient.planAction(
                     apiKey = apiKey,
                     modelName = model,
                     userPrompt = command,
-                    screenContext = screenHierarchy
+                    screenContext = screenHierarchy,
+                    languageMode = langMode
                 )
 
                 result.onSuccess { candidate ->
@@ -257,8 +253,8 @@ class VoiceWakeService : Service() {
                     }
                 }.onFailure { error ->
                     Log.e("VoiceWakeService", "Gemini error: ${error.message}", error)
-                    FloatingOverlayService.update(this@VoiceWakeService, "Gemini Error: ${error.localizedMessage}")
-                    app.ttsManager.speak("कमांड पूरा करने में समस्या आई है")
+                    FloatingOverlayService.update(this@VoiceWakeService, "Error: ${error.localizedMessage}")
+                    app.ttsManager.speak(if (langMode == "english") "Sorry, could not process command" else "Command process karne me problem aayi hai")
                 }
             } catch (e: Exception) {
                 Log.e("VoiceWakeService", "Command process exception", e)

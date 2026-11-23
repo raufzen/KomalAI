@@ -25,19 +25,17 @@ import com.komal.ai.ui.theme.KomalAITheme
 import com.komal.ai.ui.theme.PrimaryIndigo
 
 enum class KomalTab(val title: String, val icon: ImageVector) {
-    DASHBOARD("डैशबोर्ड", Icons.Default.Dashboard),
+    DASHBOARD("Dashboard", Icons.Default.Dashboard),
     GEMINI("Gemini AI", Icons.Default.AutoAwesome),
-    VOICE("वॉयस", Icons.Default.RecordVoiceOver),
-    CONSOLE("कंसोल", Icons.Default.Terminal)
+    VOICE("Voice", Icons.Default.RecordVoiceOver),
+    CONSOLE("Console", Icons.Default.Terminal)
 }
 
 class MainActivity : ComponentActivity() {
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        // Permissions granted callback
-    }
+    ) { permissions -> }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -2,7 +2,6 @@ package com.komal.ai.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,12 +51,12 @@ fun GeminiSettingsScreen() {
 
     fun fetchModelsFromApi() {
         if (apiKeyInput.isBlank()) {
-            Toast.makeText(context, "कृपया पहले Gemini API Key दर्ज करें", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Please enter your Gemini API Key first", Toast.LENGTH_SHORT).show()
             return
         }
 
         isLoadingModels = true
-        statusMessage = "Gemini API से मॉडल लोड हो रहे हैं..."
+        statusMessage = "Fetching available models from Gemini API..."
         focusManager.clearFocus()
 
         scope.launch {
@@ -69,7 +68,6 @@ fun GeminiSettingsScreen() {
                 prefs.cachedModels = models
 
                 if (models.isNotEmpty()) {
-                    // Set default if not set
                     if (!models.any { it.name == selectedMainModel }) {
                         selectedMainModel = models.first().name
                         prefs.selectedMainModel = selectedMainModel
@@ -78,13 +76,13 @@ fun GeminiSettingsScreen() {
                         selectedVoiceModel = models.first().name
                         prefs.selectedVoiceModel = selectedVoiceModel
                     }
-                    statusMessage = "सफल! ${models.size} मॉडल लोड हो गए हैं।"
-                    Toast.makeText(context, "${models.size} Gemini Models लोड हो गए", Toast.LENGTH_SHORT).show()
+                    statusMessage = "Success! Loaded ${models.size} models from your API key."
+                    Toast.makeText(context, "Loaded ${models.size} Gemini Models", Toast.LENGTH_SHORT).show()
                 } else {
-                    statusMessage = "कोई उपयुक्त मॉडल नहीं मिला।"
+                    statusMessage = "No chat-compatible models returned."
                 }
             }.onFailure { e ->
-                statusMessage = "त्रुटि: ${e.localizedMessage}"
+                statusMessage = "Error: ${e.localizedMessage}"
                 Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
@@ -106,14 +104,14 @@ fun GeminiSettingsScreen() {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Google Gemini API & मॉडल हब",
+                    text = "Google Gemini API & Model Hub",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "अपनी Gemini API Key जोड़ें। ऐप स्वचालित रूप से Google सर्वर से सभी उपलब्ध मॉडल्स लोड कर लेगा।",
+                    text = "Enter your Google Gemini API key. All available models (Pro, Flash, Vision) will be dynamically loaded directly from Google's server.",
                     fontSize = 13.sp,
                     color = TextSecondary,
                     lineHeight = 18.sp
@@ -179,11 +177,11 @@ fun GeminiSettingsScreen() {
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("मॉडल लोड हो रहे हैं...")
+                        Text("Fetching Models...")
                     } else {
                         Icon(imageVector = Icons.Default.CloudDownload, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("API से सभी मॉडल्स लोड करें (Load Models)")
+                        Text("Fetch Models from API")
                     }
                 }
 
@@ -191,13 +189,13 @@ fun GeminiSettingsScreen() {
                     Text(
                         text = statusMessage!!,
                         fontSize = 12.sp,
-                        color = if (statusMessage!!.startsWith("त्रुटि")) AccentRose else AccentEmerald
+                        color = if (statusMessage!!.startsWith("Error")) AccentRose else AccentEmerald
                     )
                 }
             }
         }
 
-        // Model Selection Section (Shown when models are available)
+        // Model Selection Section
         if (availableModels.isNotEmpty()) {
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -214,7 +212,7 @@ fun GeminiSettingsScreen() {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "उपलब्ध मॉडल्स (${availableModels.size})",
+                            text = "Available Models (${availableModels.size})",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = AccentCyanLight
@@ -232,13 +230,13 @@ fun GeminiSettingsScreen() {
                     // Selector 1: Main Controller Brain
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            text = "1. फोन कंट्रोल व मुख्य एजेंट मॉडल (Phone Controller Brain)",
+                            text = "1. Phone Controller Brain (Primary Agent Model)",
                             fontWeight = FontWeight.Medium,
                             fontSize = 13.sp,
                             color = TextPrimary
                         )
                         Text(
-                            text = "WhatsApp, YouTube और स्क्रीन क्लिकिंग के फैसलों के लिए उच्च सटीकता वाला मॉडल चुनें",
+                            text = "Used for UI analysis, WhatsApp, YouTube, and phone action planning",
                             fontSize = 11.sp,
                             color = TextSecondary
                         )
@@ -300,13 +298,13 @@ fun GeminiSettingsScreen() {
                     // Selector 2: Voice & Fast Response Model
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            text = "2. तेज़ वॉयस और त्वरित प्रतिक्रिया मॉडल (Fast Voice Model)",
+                            text = "2. Fast Voice Response Model",
                             fontWeight = FontWeight.Medium,
                             fontSize = 13.sp,
                             color = TextPrimary
                         )
                         Text(
-                            text = "तुरंत बोलकर उत्तर देने के लिए तेज़ और कम लेटेंसी वाला मॉडल (जैसे gemini-1.5-flash / gemini-2.0-flash)",
+                            text = "Low-latency fast model for instant voice feedback (e.g. gemini-1.5-flash / gemini-2.0-flash)",
                             fontSize = 11.sp,
                             color = TextSecondary
                         )
@@ -372,12 +370,13 @@ fun GeminiSettingsScreen() {
                                     apiKey = prefs.apiKey,
                                     modelName = selectedMainModel,
                                     userPrompt = "Hello Komal, test connection!",
-                                    screenContext = ""
+                                    screenContext = "",
+                                    languageMode = prefs.appLanguage
                                 )
                                 isTestingModel = false
                                 testResult.onSuccess {
-                                    Toast.makeText(context, "सत्यापित! मॉडल सफलतापूर्वक कनेक्ट हो गया", Toast.LENGTH_LONG).show()
-                                    app.ttsManager.speak("नमस्ते! मॉडल सफलतापूर्वक कनेक्ट हो चुका है")
+                                    Toast.makeText(context, "Success! Model connected perfectly", Toast.LENGTH_LONG).show()
+                                    app.ttsManager.speak(if (prefs.appLanguage == "english") "Connection successful! Komal is ready." else "Connection successful! Komal taiyar hai.")
                                 }.onFailure { e ->
                                     Toast.makeText(context, "Test Failed: ${e.message}", Toast.LENGTH_LONG).show()
                                 }
@@ -389,11 +388,11 @@ fun GeminiSettingsScreen() {
                         if (isTestingModel) {
                             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Testing connection...")
+                            Text("Testing Connection...")
                         } else {
                             Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = AccentEmerald)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("चयनित मॉडल का परीक्षण करें (Test Model)")
+                            Text("Test Model Connection")
                         }
                     }
                 }

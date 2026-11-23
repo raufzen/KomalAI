@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build & Package Android APK
@@ -44,18 +47,20 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create Release with APK
+      - name: Create or Update Release with APK
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          name: "Komal AI v1.0.0 (Release APK)"
+          tag_name: v1.0.1
+          name: "Komal AI v1.0.1 (Hinglish & English Release APK)"
           body: |
-            ### 📱 Komal AI - Voice-Activated Autonomous Phone Controller APK
+            ### 📱 Komal AI v1.0.1 Release APK
             
-            - **Build**: Auto-compiled via GitHub Actions
-            - **Accessibility Service**: Phone control, WhatsApp, YouTube automation
-            - **Google Gemini API**: Dynamic model fetching
+            **What's New in v1.0.1:**
+            - 🌐 **Hinglish + English Support**: Choose between Hinglish and English.
+            - 🎙️ **Voice Wake-Up**: "Hey Komal" / "Suno Komal" background activation.
+            - 🤖 **Dynamic Gemini API Models**: Real-time loading of all Gemini models.
+            - ⚡ **Accessibility Automation**: WhatsApp, YouTube, screen tapping & typing.
             
             📥 **Download `app-debug.apk` below and install on your phone.**
           files: app/build/outputs/apk/debug/app-debug.apk

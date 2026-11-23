@@ -15,17 +15,35 @@ class KomalTtsManager(private val context: Context) : TextToSpeech.OnInitListene
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            val result = tts?.setLanguage(Locale("hi", "IN"))
+            // Default to Indian English / Hinglish natural speech
+            val result = tts?.setLanguage(Locale("en", "IN"))
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                // Fallback to English
-                tts?.setLanguage(Locale.getDefault())
+                tts?.setLanguage(Locale.US)
             }
             tts?.setPitch(1.0f)
-            tts?.setSpeechRate(1.0f)
+            tts?.setSpeechRate(1.05f)
             isInitialized = true
             Log.d("KomalTTS", "TTS Initialized successfully.")
         } else {
             Log.e("KomalTTS", "TTS Initialization failed: $status")
+        }
+    }
+
+    fun setLanguage(langCode: String) {
+        if (!isInitialized || tts == null) return
+        when (langCode.lowercase()) {
+            "hinglish", "hi_in" -> {
+                val res = tts?.setLanguage(Locale("hi", "IN"))
+                if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    tts?.setLanguage(Locale("en", "IN"))
+                }
+            }
+            "english", "en_in" -> {
+                tts?.setLanguage(Locale("en", "IN"))
+            }
+            else -> {
+                tts?.setLanguage(Locale.getDefault())
+            }
         }
     }
 

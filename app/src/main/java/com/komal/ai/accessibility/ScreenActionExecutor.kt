@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
+import com.komal.ai.KomalApp
 import com.komal.ai.gemini.GeminiApiClient
 import com.komal.ai.gemini.GeminiFunctionCall
 import com.komal.ai.tts.KomalTtsManager
@@ -20,6 +21,9 @@ class ScreenActionExecutor(
     private val geminiClient: GeminiApiClient
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
+
+    private val isHinglish: Boolean
+        get() = (context.applicationContext as? KomalApp)?.preferencesManager?.appLanguage != "english"
 
     /**
      * Executes a tool function call decided by Gemini
@@ -37,7 +41,7 @@ class ScreenActionExecutor(
             "open_app" -> {
                 val appName = args["app_name"]?.toString() ?: ""
                 onStatusUpdate("Opening $appName...")
-                ttsManager.speak("$appName खोल रही हूँ")
+                ttsManager.speak(if (isHinglish) "$appName open kar rahi hoon" else "Opening $appName")
                 openAppByName(appName)
             }
 
@@ -45,14 +49,14 @@ class ScreenActionExecutor(
                 val recipient = args["recipient"]?.toString() ?: ""
                 val message = args["message"]?.toString() ?: ""
                 onStatusUpdate("Sending WhatsApp message to $recipient...")
-                ttsManager.speak("$recipient को WhatsApp मैसेज भेज रही हूँ")
+                ttsManager.speak(if (isHinglish) "$recipient ko WhatsApp message bhej rahi hoon" else "Sending WhatsApp message to $recipient")
                 sendWhatsAppMessage(recipient, message)
             }
 
             "youtube_search" -> {
                 val query = args["query"]?.toString() ?: ""
                 onStatusUpdate("Searching YouTube for '$query'...")
-                ttsManager.speak("YouTube पर $query सर्च कर रही हूँ")
+                ttsManager.speak(if (isHinglish) "YouTube pe $query play kar rahi hoon" else "Searching $query on YouTube")
                 searchYouTube(query)
             }
 
@@ -69,9 +73,9 @@ class ScreenActionExecutor(
                 if (service != null) {
                     val clicked = service.clickByText(targetText)
                     if (clicked) {
-                        ttsManager.speak("$targetText पर क्लिक कर दिया")
+                        ttsManager.speak(if (isHinglish) "$targetText pe click kar diya" else "Clicked on $targetText")
                     } else {
-                        ttsManager.speak("$targetText स्क्रीन पर नहीं मिला")
+                        ttsManager.speak(if (isHinglish) "$targetText screen pe nahi mila" else "Could not find $targetText on screen")
                     }
                 } else {
                     onStatusUpdate("Accessibility service is disabled!")
@@ -82,9 +86,7 @@ class ScreenActionExecutor(
                 val text = args["text"]?.toString() ?: ""
                 onStatusUpdate("Typing '$text'...")
                 val service = KomalAccessibilityService.instance
-                if (service != null) {
-                    service.typeTextIntoActiveField(text)
-                }
+                service?.typeTextIntoActiveField(text)
             }
 
             "scroll_screen" -> {
@@ -160,7 +162,7 @@ class ScreenActionExecutor(
             }
         }
 
-        ttsManager.speak("माफ़ कीजिए, $name ऐप मुझे आपके फोन में नहीं मिला")
+        ttsManager.speak(if (isHinglish) "Sorry, $name app nahi mila" else "Sorry, I could not find $name on your phone")
         return false
     }
 
@@ -172,7 +174,6 @@ class ScreenActionExecutor(
         scope.launch {
             val cleanRecipient = recipient.replace("[^0-9+]".toRegex(), "")
             if (cleanRecipient.length >= 10) {
-                // If phone number provided, launch direct chat intent
                 val url = "https://api.whatsapp.com/send?phone=$cleanRecipient&text=${URLEncoder.encode(message, "UTF-8")}"
                 val intent = Intent(Intent.ACTION_VIEW).apply {
                     data = Uri.parse(url)
@@ -183,22 +184,18 @@ class ScreenActionExecutor(
                 try {
                     context.startActivity(intent)
                     delay(2500) // wait for WhatsApp chat to open
-                    // Auto-click Send button via accessibility
                     val service = KomalAccessibilityService.instance
                     service?.clickByText("Send")
                         ?: service?.clickByText("भेजें")
                 } catch (e: Exception) {
                     Log.e("ScreenActionExecutor", "Error opening WhatsApp via URL", e)
-                    // Fallback to opening WhatsApp app directly
                     openAppByName("WhatsApp")
                 }
             } else {
-                // Search contact name workflow
                 openAppByName("WhatsApp")
                 delay(2000)
                 val service = KomalAccessibilityService.instance
                 if (service != null) {
-                    // Click search icon or input
                     val searchClicked = service.clickByText("Search") || service.clickByText("खोजें")
                     if (searchClicked) {
                         delay(1000)
@@ -227,7 +224,6 @@ class ScreenActionExecutor(
         try {
             context.startActivity(intent)
         } catch (e: Exception) {
-            // fallback to browser YouTube URL
             val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=${URLEncoder.encode(query, "UTF-8")}")).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
@@ -240,18 +236,19 @@ class ScreenActionExecutor(
      */
     fun fetchAndSpeakNews(topic: String, apiKey: String, selectedModel: String) {
         scope.launch {
-            ttsManager.speak("आज की ताज़ा ख़बरें ला रही हूँ...")
-            val prompt = "Give a concise 3-bullet summary of today's top news updates regarding: $topic. Answer in natural conversational Hindi so it sounds great when spoken aloud."
-            val result = geminiClient.planAction(apiKey, selectedModel, prompt, "")
+            ttsManager.speak(if (isHinglish) "Aaj ki top news la rahi hoon..." else "Fetching today's top headlines...")
+            val langDesc = if (isHinglish) "conversational Hinglish (English alphabet + simple Hindi)" else "clear English"
+            val prompt = "Give a crisp 3-bullet summary of today's top news updates regarding: $topic. Answer in $langDesc so it sounds pleasant and natural when spoken aloud."
+            val result = geminiClient.planAction(apiKey, selectedModel, prompt, "", if (isHinglish) "hinglish" else "english")
             result.onSuccess { candidate ->
                 val newsText = candidate.content?.parts?.firstOrNull()?.text
                 if (!newsText.isNullOrBlank()) {
                     ttsManager.speak(newsText)
                 } else {
-                    ttsManager.speak("आज की कोई विशेष ख़बर नहीं मिली")
+                    ttsManager.speak(if (isHinglish) "Koi khaas news nahi mili" else "No recent updates found for $topic")
                 }
             }.onFailure {
-                ttsManager.speak("ख़बर लाने में कुछ रुकावट आई है, कृपया इंटरनेट चेक करें")
+                ttsManager.speak(if (isHinglish) "News fetch karne me issue aaya hai, please internet check karein" else "Could not fetch news, please check your internet connection")
             }
         }
     }
